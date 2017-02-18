@@ -1,0 +1,24 @@
+{
+	"authors": [
+		"krzaq"
+	],
+	"name": "pierun",
+	"license": "MIT",
+	"copyright": "Copyright © 2017, krzaq",
+	"description": "A lightning fast blogging engine",
+	"dependencies": {
+		"vibe-d": "~>0.7.28",
+		"painlessjson": "~>1.3.8",
+		"hibernated": {
+			"path": "../hibernated",
+			"not-version": "~>0.2.33"
+		}
+	},
+	"subConfigurations": {
+		"hibernated": "PGSQL"
+	},
+	"versions": [
+		"VibeDefaultMain",
+		"USE_PGSQL"
+	]
+}
