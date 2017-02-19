@@ -16,18 +16,25 @@ shared static this()
         .parseJSON
         .fromJSON!Settings;
 
-	auto http_settings = new HTTPServerSettings;
+    auto http_settings = new HTTPServerSettings;
 
     http_settings.port = settings.port;
     http_settings.bindAddresses = settings.ips.dup;
 
-	listenHTTP(http_settings, &hello);
+    //listenHTTP(http_settings, &hello);
+
+    auto router = new URLRouter();
+
+    import api;
+    router.registerRestInterface(new PierunAPI);
+
+    listenHTTP(http_settings, router);
 
     import std.format;
-	logInfo("Please open http://%s:%s/ in your browser.".format(settings.ips[0], settings.port));
+    logInfo("Please open http://%s:%s/ in your browser.".format(settings.ips[0], settings.port));
 }
 
-void hello(HTTPServerRequest req, HTTPServerResponse res)
-{
-	res.writeBody("Hello, World!");
-}
+//void hello(HTTPServerRequest req, HTTPServerResponse res)
+//{
+//    res.writeBody("Hello, World!");
+//}
