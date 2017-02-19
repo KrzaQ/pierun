@@ -1,7 +1,6 @@
 import vibe.d;
 import vibe.textfilter.markdown;
 
-import std.functional;
 import std.string;
 
 struct Markdown
@@ -12,20 +11,13 @@ struct Markdown
 @path("/api/")
 interface API
 {
-    Markdown postMarkdown(string md);
+    Markdown parse_markdown(string md);
 }
-
-//alias toMarkdown = memoize!filterMarkdown;
 
 class PierunAPI : API
 {
-    static string toMarkdownImpl(const string md) {
-        return filterMarkdown(md, MarkdownFlags.forumDefault);
-    }
-
-    alias toMarkdown = memoize!toMarkdownImpl;
-
-    Markdown postMarkdown(string md) {
-        return Markdown(toMarkdown(md));
+    Markdown parse_markdown(string md) {
+        import markdown;
+        return Markdown(markdown.fromMarkdown(md));
     }
 }
