@@ -1,9 +1,9 @@
 import std.functional;
 import vibe.textfilter.markdown;
 
-static string fromMarkdownImpl(const string md) {
+static string parseMarkdownImpl(const string md) {
     return filterMarkdown(md, MarkdownFlags.forumDefault);
 }
 
-alias fromMarkdown = memoize!fromMarkdownImpl;
+alias parseMarkdown = memoize!parseMarkdownImpl;
 

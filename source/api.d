@@ -18,6 +18,6 @@ class PierunAPI : API
 {
     Markdown parse_markdown(string md) {
         import markdown;
-        return Markdown(markdown.fromMarkdown(md));
+        return Markdown(markdown.parseMarkdown(md));
     }
 }
