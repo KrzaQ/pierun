@@ -1,3 +1,5 @@
+module pierun.api;
+
 import vibe.d;
 import vibe.textfilter.markdown;
 
@@ -17,7 +19,7 @@ interface API
 class PierunAPI : API
 {
     Markdown parse_markdown(string md) {
-        import markdown;
-        return Markdown(markdown.parseMarkdown(md));
+        import pierun.utils.markdown;
+        return Markdown(pierun.utils.markdown.parseMarkdown(md));
     }
 }

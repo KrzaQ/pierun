@@ -25,8 +25,10 @@ shared static this()
 
     auto router = new URLRouter();
 
-    import api;
-    router.registerRestInterface(new PierunAPI);
+    {
+        import pierun.api;
+        router.registerRestInterface(new PierunAPI);
+    }
 
     listenHTTP(http_settings, router);
 

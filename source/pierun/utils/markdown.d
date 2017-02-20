@@ -1,3 +1,5 @@
+module pierun.utils.markdown;
+
 import std.functional;
 import vibe.textfilter.markdown;
 
