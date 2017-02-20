@@ -1,9 +1,19 @@
 import vibe.d;
 
+struct DBSettings
+{
+    string host;
+    ushort port;
+    string user;
+    string password;
+    string name;
+}
+
 struct Settings
 {
     string[] ips;
     ushort port;
+    DBSettings database;
 }
 
 shared static this()
@@ -30,13 +40,7 @@ shared static this()
         router.registerRestInterface(new PierunAPI);
     }
 
-    {
-        import pierun.core;
-        import hibernated.core;
-        import ddbc.drivers.pgsqlddbc;
-        
-        EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag);
-    }
+    auto db = prepareDBConnection(settings.database);
 
     listenHTTP(http_settings, router);
 
@@ -48,3 +52,47 @@ shared static this()
 //{
 //    res.writeBody("Hello, World!");
 //}
+
+
+auto prepareDBConnection(DBSettings s){
+    import pierun.core;
+    import hibernated.core;
+    
+    EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag);
+
+
+    version(USE_PGSQL){
+        import ddbc.drivers.pgsqlddbc;
+        auto driver = new PGSQLDriver();
+        Dialect dialect = new PGSQLDialect();
+        auto url = driver.generateUrl(s.host, s.port, s.name);
+        driver.setUserAndPassword(s.user, s.password);
+    } else version (USE_MYSQL) {
+        import ddbc.drivers.mysqlddbc;
+        auto driver = new MySQLDriver();
+        Dialect dialect = new MySQLDialect();
+        auto url = driver.generateUrl(s.host, s.port, s.name);
+        driver.setUserAndPassword(s.user, s.password);
+    } else version (USE_SQLITE) {
+        import ddbc.drivers.sqliteddbc;
+        auto driver = new SQLITEDriver();
+        string url = s.name ~ ".sqlite";
+        Dialect dialect = new SQLiteDialect();
+    } else {
+        static assert(0);
+    }
+
+    string[string] params;
+    DataSource ds = new ConnectionPoolDataSourceImpl(driver, url, params);
+    SessionFactory factory = new SessionFactoryImpl(schema, dialect, ds);
+    scope(exit) factory.close();
+    {
+        Connection conn = ds.getConnection();
+        scope(exit) conn.close();
+        factory.getDBMetaData().updateDBSchema(conn, false, true);
+    }
+
+    import std.typecons;
+    return tuple!("source", "factory")(ds, factory);
+}
+

@@ -18,8 +18,8 @@ class Tag
 {
     @Generated @Id ulong id;
 
-    @Column("tag_name")
-    @UniqueKey("tag_name_index")
+    //@Column("tag_name")
+    //@UniqueKey("tag_name_index")
     string name;
 }
 
@@ -46,8 +46,8 @@ class Language
     @Generated @Id ulong id;
 
     @Column("iso_code")
-    @UniqueKey("iso_code_index")
-    char[2] isoCode;
+    @UniqueKey("iso_code")
+    string isoCode;
 
     string name;
 }

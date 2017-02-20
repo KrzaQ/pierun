@@ -5,6 +5,7 @@
         "host": "localhost",
         "port": 5432,
         "user": "krzaq",
-        "password": ""
+        "password": "",
+        "name": "pierun"
     }
 }
