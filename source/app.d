@@ -30,6 +30,14 @@ shared static this()
         router.registerRestInterface(new PierunAPI);
     }
 
+    {
+        import pierun.core;
+        import hibernated.core;
+        import ddbc.drivers.pgsqlddbc;
+        
+        EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag);
+    }
+
     listenHTTP(http_settings, router);
 
     import std.format;
