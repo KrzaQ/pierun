@@ -21,6 +21,9 @@ shared static this()
     import painlessjson;
     import std.file;
     import std.json;
+    import pierun.api;
+    import pierun.webinterface;
+
     const Settings settings = read("config.json")
         .to!string
         .parseJSON
@@ -33,26 +36,25 @@ shared static this()
 
     //listenHTTP(http_settings, &hello);
 
+    auto db = prepareDBConnection(settings.database);
+
     auto router = new URLRouter();
 
-    {
-        import pierun.api;
-        router.registerRestInterface(new PierunAPI);
-    }
+    
+    router.registerRestInterface(new PierunAPI);
+    router.registerWebInterface(new WebInterface(db.source, db.factory));
 
-    auto db = prepareDBConnection(settings.database);
+    //auto fsettings = new HTTPFileServerSettings;
+    //fsettings.options = HTTPFileServerOption.serveIndexHTML;
+    //fsettings.serverPathPrefix = "/static";
+    //router.get("static/*", serveStaticFiles("static/", fsettings));
+    router.get("*", serveStaticFiles("static/"));
 
     listenHTTP(http_settings, router);
 
     import std.format;
     logInfo("Please open http://%s:%s/ in your browser.".format(settings.ips[0], settings.port));
 }
-
-//void hello(HTTPServerRequest req, HTTPServerResponse res)
-//{
-//    res.writeBody("Hello, World!");
-//}
-
 
 auto prepareDBConnection(DBSettings s){
     import pierun.core;

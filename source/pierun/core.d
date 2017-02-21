@@ -17,9 +17,7 @@ class Author
 class Tag
 {
     @Generated @Id ulong id;
-
-    //@Column("tag_name")
-    //@UniqueKey("tag_name_index")
+    // TODO: constraint to unique
     string name;
 }
 
@@ -37,6 +35,7 @@ class PostData
     @Generated @Id ulong id;
     Post post;
     string markdown;
+    string gpg;
     DateTime timestamp;
     @ManyToMany Tag[] tags;
 }
@@ -45,9 +44,7 @@ class Language
 {
     @Generated @Id ulong id;
 
-    @Column("iso_code")
-    @UniqueKey("iso_code")
+    // TODO: constraint to 2 characters and unique
     string isoCode;
-
     string name;
 }
