@@ -7,7 +7,7 @@ import std.string;
 
 struct Markdown
 {
-    string markdown;
+    string result;
 }
 
 @path("/api/")
