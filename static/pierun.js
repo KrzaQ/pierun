@@ -3,10 +3,10 @@ setDisplay = function() {
     var maxId = 0;
     return function(id) {
         return function(data) {
-            console.log(id + ' ' + data.markdown)
+            console.log(id + ' ' + data.result)
             if(id > maxId) {
                 maxId = id
-                $('#display').html(data.markdown)
+                $('#display').html(data.result)
             }
         }
     }
