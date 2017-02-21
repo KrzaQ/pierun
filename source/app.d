@@ -44,11 +44,9 @@ shared static this()
     router.registerRestInterface(new PierunAPI);
     router.registerWebInterface(new WebInterface(db.source, db.factory));
 
-    //auto fsettings = new HTTPFileServerSettings;
-    //fsettings.options = HTTPFileServerOption.serveIndexHTML;
-    //fsettings.serverPathPrefix = "/static";
-    //router.get("static/*", serveStaticFiles("static/", fsettings));
-    router.get("*", serveStaticFiles("static/"));
+    auto fsettings = new HTTPFileServerSettings;
+    fsettings.serverPathPrefix = "/static";
+    router.get("/static/*", serveStaticFiles("static/", fsettings));
 
     listenHTTP(http_settings, router);
 
