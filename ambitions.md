@@ -1,6 +1,10 @@
 # markdown
 
+using `vibe.d`'s code. Works well, but the functionality leaves a lot to be desired. 
+
 ## tables
+
+as above. The current code doesn't seem to handle > 2 rows...
 
 ## code
 
@@ -13,7 +17,9 @@ automatic rehost for images? (kind of what stack does)
 
 # history & diff (edit)
 
-# language versions (with tags?)
+# language versions
+
+language field in the post type.
 
 # collections (recursive?)
 
