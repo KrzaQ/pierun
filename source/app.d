@@ -1,5 +1,3 @@
-import vibe.d;
-
 struct DBSettings
 {
     string host;
@@ -16,13 +14,17 @@ struct Settings
     DBSettings database;
 }
 
-shared static this()
+
+void main()
 {
+    import vibe.d;
+    if (!finalizeCommandLineOptions())
+        return;
+ 
+    import std.file, std.json;
+    static import db = hibernated.core;
     import painlessjson;
-    import std.file;
-    import std.json;
-    import pierun.api;
-    import pierun.webinterface;
+    import pierun.api, pierun.webinterface;
 
     const Settings settings = read("config.json")
         .to!string
@@ -36,13 +38,18 @@ shared static this()
 
     //listenHTTP(http_settings, &hello);
 
-    auto db = prepareDBConnection(settings.database);
+    auto tup = prepareDBConnection(settings.database);
+    db.DataSource ds = tup.source;
+    db.SessionFactory sf = tup.factory;
+    scope(exit) sf.close;
+    db.Session s = sf.openSession;
+    scope(exit) s.close;
 
     auto router = new URLRouter();
 
     
     router.registerRestInterface(new PierunAPI);
-    router.registerWebInterface(new WebInterface(db.source, db.factory));
+    router.registerWebInterface(new WebInterface(ds, s));
 
     auto fsettings = new HTTPFileServerSettings;
     fsettings.serverPathPrefix = "/static";
@@ -52,14 +59,16 @@ shared static this()
 
     import std.format;
     logInfo("Please open http://%s:%s/ in your browser.".format(settings.ips[0], settings.port));
+
+    lowerPrivileges();
+    runEventLoop();
 }
 
 auto prepareDBConnection(DBSettings s){
     import pierun.core;
     import hibernated.core;
     
-    EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag);
-
+    EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag, Link, LinkList);
 
     version(USE_PGSQL){
         import ddbc.drivers.pgsqlddbc;
@@ -85,14 +94,57 @@ auto prepareDBConnection(DBSettings s){
     string[string] params;
     DataSource ds = new ConnectionPoolDataSourceImpl(driver, url, params);
     SessionFactory factory = new SessionFactoryImpl(schema, dialect, ds);
-    scope(exit) factory.close();
+
     {
         Connection conn = ds.getConnection();
         scope(exit) conn.close();
         factory.getDBMetaData().updateDBSchema(conn, false, true);
     }
 
+    {
+        auto sess = factory.openSession();
+        scope(exit) sess.close;
+
+        Author[] as = sess.createQuery("FROM Author").list!Author;
+
+        if(as.length == 0) {
+            import std.random, std.stdio;
+
+            Author a = new Author;
+            a.salt = genPassword(32);
+            
+            "No authors listed. Adding one".writeln;
+            "Type your name: ".writeln;
+            std.stdio.readf(" %s\n", &a.name);
+            "Type your email: ".writeln;
+            std.stdio.readf(" %s\n", &a.email);
+
+            auto password = genPassword(16);
+
+            import botan.passhash.bcrypt, botan.rng.auto_rng;
+
+            a.hashedPassword = generateBcrypt(password ~ a.salt, new AutoSeededRNG);
+
+            assert(checkBcrypt(password ~ a.salt, a.hashedPassword));
+
+            sess.save(a);
+
+            writefln("New author: %s, email: %s, password: %s", a.name, a.email, password);
+        }
+    }
+
     import std.typecons;
     return tuple!("source", "factory")(ds, factory);
+}
+
+string genPassword(int len)
+{
+    static immutable char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" ~
+                                    "abcdefghijklmnopqrstuvwxyz" ~
+                                    "01234567890" ~
+                                    "[]{}()-=_+,.<>/?~";
+
+    import std.random, std.algorithm, std.range, std.conv;
+    return iota(len).map!(e => chars[uniform(0, chars.length)]).to!string;
 }
 
