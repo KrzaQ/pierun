@@ -1,0 +1,5 @@
+#footer
+    :markdown
+        Powered by [Pierun](https://github.com/KrzaQ/pierun) © 2017 by [KrzaQ](http://dev.krzaq.cc)
+
+    p generated in #{time}

@@ -1,13 +1,9 @@
-doctype html
-html
-    head
-        title test
-    body
-        script(type='application/javascript', src='/static/pierun.js')
-        script(type='application/javascript', src='/static/jquery-3.1.1.min.js')
-        #main
-            form(action="/", method="POST")
-                textarea(name="code", id="code") #{code}
-                br
-                button(type="submit") Format!
-        p(id = 'display')
+include header
+#main
+    form(action="/", method="POST")
+        textarea(name="code", id="code") #{code}
+        br
+        button(type="submit") Format!
+p(id = 'display')
+
+include footer
