@@ -1,1 +1,17 @@
-login.dt
+include header
+
+- if(_error !is null)
+    div(class="error")
+        p Error: #{_error}
+
+form(action="/login", method="POST")
+    div
+        label Username:
+        input(type="text", name="username")
+    div
+        label Password:
+        input(type="password", name="password")
+    
+    button(type="submit", name="submitButton") Login
+
+include footer

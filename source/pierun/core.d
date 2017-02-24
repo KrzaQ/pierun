@@ -5,14 +5,23 @@ import std.string;
 
 import hibernated.core;
 
-class Author
+class User
 {
-    @Id @Generated int id;
+    @Generated @Id int id;
     string name;
     string email;
     string hashedPassword;
     string salt;
+    LoginSession[] sessions;
     Post[] posts;
+}
+
+class LoginSession
+{
+    @Generated @Id int id;
+    User user;
+    string sessionId;
+    DateTime expires;
 }
 
 class Tag
@@ -22,14 +31,17 @@ class Tag
     string name;
 }
 
+
+
 class Post
 {
     @Generated @Id int id;
-    Author author;
+    User author;
     DateTime published;
     PostData[] edits;
     Language language;
 }
+
 
 class PostData
 {

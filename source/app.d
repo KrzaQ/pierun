@@ -35,6 +35,7 @@ void main()
 
     http_settings.port = settings.port;
     http_settings.bindAddresses = settings.ips.dup;
+    http_settings.sessionStore = new MemorySessionStore;
 
     //listenHTTP(http_settings, &hello);
 
@@ -68,7 +69,8 @@ auto prepareDBConnection(DBSettings s){
     import pierun.core;
     import hibernated.core;
     
-    EntityMetaData schema = new SchemaInfoImpl!(Author, Language, Post, PostData, Tag, Link, LinkList);
+    EntityMetaData schema = new SchemaInfoImpl!(User, LoginSession, Language,
+        Post, PostData, Tag, Link, LinkList);
 
     version(USE_PGSQL){
         import ddbc.drivers.pgsqlddbc;
@@ -105,12 +107,12 @@ auto prepareDBConnection(DBSettings s){
         auto sess = factory.openSession();
         scope(exit) sess.close;
 
-        Author[] as = sess.createQuery("FROM Author").list!Author;
+        User[] as = sess.createQuery("FROM User").list!User;
 
         if(as.length == 0) {
             import std.random, std.stdio;
 
-            Author a = new Author;
+            User a = new User;
             a.salt = genPassword(32);
             
             "No authors listed. Adding one".writeln;
@@ -142,7 +144,7 @@ string genPassword(int len)
     static immutable char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" ~
                                     "abcdefghijklmnopqrstuvwxyz" ~
                                     "01234567890" ~
-                                    "[]{}()-=_+,.<>/?~";
+                                    "[]{}()-=_+<>?~";
 
     import std.random, std.algorithm, std.range, std.conv;
     return iota(len).map!(e => chars[uniform(0, chars.length)]).to!string;
