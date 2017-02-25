@@ -1,0 +1,7 @@
+include header
+
+p post contents
+
+p id: #{id}
+
+include footer

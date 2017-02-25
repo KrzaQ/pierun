@@ -1,5 +1,6 @@
 module pierun.webinterface;
 
+import std.conv;
 import std.typecons;
 
 import vibe.d;
@@ -88,6 +89,8 @@ class WebInterface
         redirect("/");
     }
 
+
+
     @noAuth
     void post(HTTPServerRequest req, string code)
     {
@@ -98,9 +101,32 @@ class WebInterface
 
         code = pierun.utils.markdown.parseMarkdown(code);
 
-        auto time = (Clock.currTime - req.timeCreated).to!string;
+        auto time = req.getTime;
 
         render!("index.dt", code, time, auth);
+    }
+
+    @path("/post/:id/*") @noAuth
+    void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    {
+        auto id = req.params["id"].to!int;
+        auto auth = req.getAuth;
+        auto time = req.getTime;
+        render!("post.dt", id, auth, time);
+    }
+
+    @path("/post/:id") @noAuth
+    void getPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    {
+        getPostIdName(req, res);
+    }
+
+    @noRoute
+    void error(HTTPServerRequest req, string error)
+    {
+        auto time = req.getTime;
+        auto auth = req.getAuth;
+        render!("error.dt", error, auth, time);
     }
 
     mixin PrivateAccessProxy;
@@ -111,4 +137,12 @@ Nullable!AuthInfo getAuth(ref HTTPServerRequest req) {
     if (req.session && req.session.isKeySet("auth"))
         auth = req.session.get!AuthInfo("auth");
     return auth;
+}
+
+Nullable!string getTime(ref HTTPServerRequest req) {
+    Nullable!string ret;
+    import std.conv;
+    auto diff = Clock.currTime - req.timeCreated;
+    ret = diff.to!string;
+    return ret;
 }
