@@ -1,7 +1,6 @@
 module pierun.webinterface;
 
-import std.conv;
-import std.typecons;
+import std.conv, std.format, std.string, std.typecons;
 
 import vibe.d;
 import vibe.web.auth;
@@ -25,7 +24,7 @@ struct AuthInfo
     bool admin;
 
     @safe:
-    bool isAdmin() const { return admin; }
+    bool isAdmin() const { return this.admin; }
 }
 
 @requiresAuth
@@ -38,8 +37,11 @@ class WebInterface
     }
     
     @noRoute
-    AuthInfo authenticate(HTTPServerRequest, HTTPServerResponse){
-        return AuthInfo();
+    AuthInfo authenticate(HTTPServerRequest req, HTTPServerResponse res){
+        if (!req.session || !req.session.isKeySet("auth"))
+            throw new HTTPStatusException(HTTPStatus.forbidden, "Not authorized to perform this action!");
+
+        return req.session.get!AuthInfo("auth");
     }
 
     this(DataSource ds, DBSession s)
@@ -51,25 +53,19 @@ class WebInterface
     @noAuth
     void index(HTTPServerRequest req)
     {
-        auto code = "";
-        auto time = null;
-        auto auth = req.getAuth;
-        render!("index.dt", code, time, auth);
+        auto markdown = "";
+        render!("index.dt", markdown);
     }
-
-    //void editPost
 
     @noAuth
     void getLogin(HTTPServerRequest req, string _error = null)
     {
-        auto auth = req.getAuth;
-
-        auto time = null;
-        render!("login.dt", time, auth, _error);
+        render!("login.dt", _error);
     }
 
     @noAuth @errorDisplay!getLogin 
-    void postLogin(string username, string password, scope HTTPServerRequest req, scope HTTPServerResponse res)
+    void postLogin(string username, string password,
+        scope HTTPServerRequest req, scope HTTPServerResponse res)
     {
         auto user = session.createQuery("FROM User WHERE name=:Name")
             .setParameter("Name", username)
@@ -79,40 +75,43 @@ class WebInterface
 
         import botan.passhash.bcrypt;
 
-        enforceHTTP(checkBcrypt(password ~ user.salt, user.hashedPassword), HTTPStatus.forbidden, "Username or password incorrect");
+        enforceHTTP(checkBcrypt(password ~ user.salt, user.hashedPassword),
+            HTTPStatus.forbidden, "Username or password incorrect");
 
         AuthInfo ai;
         ai.userName = user.name;
+        ai.admin = true;
         req.session = res.startSession;
         req.session.set("auth", ai);
 
         redirect("/");
     }
 
-
-
     @noAuth
-    void post(HTTPServerRequest req, string code)
+    void post(HTTPServerRequest req, string markdown)
     {
         import pierun.utils.markdown;
         import std.conv;
 
-        auto auth = req.getAuth;
+        markdown = pierun.utils.markdown.parseMarkdown(markdown);
 
-        code = pierun.utils.markdown.parseMarkdown(code);
 
-        auto time = req.getTime;
-
-        render!("index.dt", code, time, auth);
+        render!("index.dt", markdown);
     }
 
     @path("/post/:id/*") @noAuth
     void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)
     {
         auto id = req.params["id"].to!int;
-        auto auth = req.getAuth;
-        auto time = req.getTime;
-        render!("post.dt", id, auth, time);
+
+        Post p = session.createQuery("FROM Post WHERE id=:Id")
+            .setParameter("Id", id)
+            .uniqueResult!Post;
+
+        enforceHTTP(p !is null, HTTPStatus.notFound,
+            "Post %d not found!".format(id));
+
+        render!("post.dt", p);
     }
 
     @path("/post/:id") @noAuth
@@ -121,12 +120,55 @@ class WebInterface
         getPostIdName(req, res);
     }
 
+    @auth(Role.admin) @errorDisplay!getLogin 
+    void getAddPost(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        postAddPost(req, res);
+    }
+
+    @auth(Role.admin) @errorDisplay!getLogin 
+    void postAddPost(HTTPServerRequest req, HTTPServerResponse res,
+        string markdown = "", string excerpt = "", string title = "",
+        string language = "")
+    {
+        render!("add_post.dt", markdown, excerpt, title, language);
+    }
+
+    @auth(Role.admin) @errorDisplay!getLogin
+    void postSendPost(HTTPServerRequest req, HTTPServerResponse res,
+        AuthInfo ai, string markdown, string excerpt, string title,
+        string language)
+    {
+        User u = session.createQuery("FROM User WHERE name=:Name")
+            .setParameter("Name", ai.userName)
+            .uniqueResult!User;
+        Post p = new Post;
+        PostData pd = new PostData;
+
+        p.author = u;
+        p.edits = [pd];
+        p.published = cast(DateTime)Clock.currTime;
+
+        pd.title = title;
+        pd.markdown = markdown;
+        pd.excerpt = excerpt;
+        pd.timestamp = p.published;
+        pd.post = p;
+
+        u.posts ~= p;
+
+        session.update(u);
+        session.save(p);
+        session.save(pd);
+
+        redirect("/");
+    }
+
+
     @noRoute
     void error(HTTPServerRequest req, string error)
     {
-        auto time = req.getTime;
-        auto auth = req.getAuth;
-        render!("error.dt", error, auth, time);
+        render!("error.dt", error);
     }
 
     mixin PrivateAccessProxy;

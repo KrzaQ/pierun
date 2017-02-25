@@ -1,7 +1,6 @@
 module pierun.core;
 
-import std.datetime;
-import std.string;
+import std.datetime, std.string, std.typecons;
 
 import hibernated.core;
 
@@ -31,8 +30,6 @@ class Tag
     string name;
 }
 
-
-
 class Post
 {
     @Generated @Id int id;
@@ -42,14 +39,14 @@ class Post
     Language language;
 }
 
-
 class PostData
 {
     @Generated @Id int id;
     Post post;
+    string title;
     string markdown;
     string excerpt;
-    string gpg;
+    Nullable!string gpg;
     DateTime timestamp;
     @ManyToMany Tag[] tags;
 }

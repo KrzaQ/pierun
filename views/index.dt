@@ -1,7 +1,7 @@
 include header
 #main
     form(action="/", method="POST")
-        textarea(name="code", id="code") #{code}
+        textarea(name="markdown", id="markdown") #{markdown}
         br
         button(type="submit") Format!
 p(id = 'display')

@@ -1,0 +1,24 @@
+include header
+
+h1 adding post
+
+#main
+    form(method="POST")
+        div
+            p Title:
+            input(name='title', value=title)
+        textarea(name="markdown", id="markdown") #{markdown}
+        br
+        textarea(name="excerpt", id="excerpt") #{excerpt}
+        br
+        div
+            p Langauge:
+            input(name='language', value='PL')
+        button(type="submit", formaction='/add_post') preview!
+        button(type="submit", formaction='/send_post') send
+
+
+- import pierun.utils.markdown;
+p(id = 'display')!= markdown.parseMarkdown
+
+include footer

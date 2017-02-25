@@ -14,7 +14,7 @@ setDisplay = function() {
 
 window.addEventListener("load", function(){
     var id = 0;
-    $('#code').bind('input propertychange', function() {
+    $('#markdown').bind('input propertychange', function() {
         id = id + 1
         $.ajax({
             type: "POST",

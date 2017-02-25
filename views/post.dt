@@ -1,7 +1,9 @@
 include header
 
-p post contents
+- import pierun.utils.markdown, pierun.core, std.range;
 
-p id: #{id}
+- PostData pd = p.edits[$-1];
+h1#title #{pd.title}
+div#contents!= pd.markdown.parseMarkdown
 
 include footer
