@@ -17,3 +17,5 @@ html
             - else
                 p Hello, anonymous!
                 a(href='/login') Log In!
+
+        hr

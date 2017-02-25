@@ -1,3 +1,6 @@
+include header
 
 h1 Error!
-p #{error}
+p #{_error}
+
+include footer

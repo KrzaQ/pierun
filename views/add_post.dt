@@ -3,17 +3,24 @@ include header
 h1 adding post
 
 #main
+    - if(_error !is null)
+        p ERROR: #{_error}
+
     form(method="POST")
-        div
-            p Title:
-            input(name='title', value=title)
+        label(for='title') Title:
+        input(name='title', value=title)
+        br
+
         textarea(name="markdown", id="markdown") #{markdown}
         br
+        
         textarea(name="excerpt", id="excerpt") #{excerpt}
         br
-        div
-            p Langauge:
-            input(name='language', value='PL')
+        
+        label(for='language') Langauge:
+        input(name='language', value=language)
+        br
+        
         button(type="submit", formaction='/add_post') preview!
         button(type="submit", formaction='/send_post') send
 

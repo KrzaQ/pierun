@@ -27,12 +27,40 @@ struct AuthInfo
     bool isAdmin() const { return this.admin; }
 }
 
+private class DBCache
+{
+    private {
+        DBSession session;
+        Post[int] posts;
+    }
+
+    this(DBSession s)
+    {
+        this.session = s;
+    }
+
+    auto getPost(int id)
+    {
+        auto ptr = id in posts;
+        if(ptr !is null) return *ptr;
+
+        Post p = session.createQuery("FROM Post WHERE id=:Id")
+            .setParameter("Id", id)
+            .uniqueResult!Post;
+
+        if(p !is null)
+            posts[id] = p;
+        return p;
+    }
+}
+
 @requiresAuth
 class WebInterface
 {
     private {
         DataSource dataSource;
         DBSession session;
+        DBCache dbCache;
         //SessionVar!(SessionData, "session") sessdionData;
     }
     
@@ -48,6 +76,7 @@ class WebInterface
     {
         this.dataSource = ds;
         this.session = s;
+        this.dbCache = new DBCache(s);
     }
     
     @noAuth
@@ -95,18 +124,15 @@ class WebInterface
 
         markdown = pierun.utils.markdown.parseMarkdown(markdown);
 
-
         render!("index.dt", markdown);
     }
 
-    @path("/post/:id/*") @noAuth
+    @path("/post/:id/*") @noAuth @errorDisplay!error
     void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)
     {
         auto id = req.params["id"].to!int;
 
-        Post p = session.createQuery("FROM Post WHERE id=:Id")
-            .setParameter("Id", id)
-            .uniqueResult!Post;
+        Post p = dbCache.getPost(id);
 
         enforceHTTP(p !is null, HTTPStatus.notFound,
             "Post %d not found!".format(id));
@@ -114,34 +140,38 @@ class WebInterface
         render!("post.dt", p);
     }
 
-    @path("/post/:id") @noAuth
+    @path("/post/:id") @noAuth @errorDisplay!error
     void getPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
     {
         getPostIdName(req, res);
     }
 
-    @auth(Role.admin) @errorDisplay!getLogin 
+    @auth(Role.admin)
     void getAddPost(HTTPServerRequest req, HTTPServerResponse res)
     {
         postAddPost(req, res);
     }
 
-    @auth(Role.admin) @errorDisplay!getLogin 
+    @auth(Role.admin)
     void postAddPost(HTTPServerRequest req, HTTPServerResponse res,
         string markdown = "", string excerpt = "", string title = "",
-        string language = "")
+        string language = "EN", string _error = null)
     {
-        render!("add_post.dt", markdown, excerpt, title, language);
+        render!("add_post.dt", markdown, excerpt, title, language, _error);
     }
 
-    @auth(Role.admin) @errorDisplay!getLogin
+    @auth(Role.admin) @errorDisplay!postAddPost
     void postSendPost(HTTPServerRequest req, HTTPServerResponse res,
         AuthInfo ai, string markdown, string excerpt, string title,
         string language)
     {
+        enforceHTTP(language.length == 2, HTTPStatus.badRequest,
+            "Language must be two characters long");
+
         User u = session.createQuery("FROM User WHERE name=:Name")
             .setParameter("Name", ai.userName)
             .uniqueResult!User;
+
         Post p = new Post;
         PostData pd = new PostData;
 
@@ -165,10 +195,10 @@ class WebInterface
     }
 
 
-    @noRoute
-    void error(HTTPServerRequest req, string error)
+    @noRoute @noAuth
+    void error(HTTPServerRequest req, string _error)
     {
-        render!("error.dt", error);
+        render!("error.dt", _error);
     }
 
     mixin PrivateAccessProxy;

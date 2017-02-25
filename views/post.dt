@@ -1,9 +1,10 @@
 include header
 
-- import pierun.utils.markdown, pierun.core, std.range;
+- import pierun.utils.markdown, pierun.core, std.conv, std.format, std.range;
 
 - PostData pd = p.edits[$-1];
-h1#title #{pd.title}
+h1#title 
+    a(href=getPostAddress(p.id, pd.title)) #{pd.title}
 div#contents!= pd.markdown.parseMarkdown
 
 include footer
