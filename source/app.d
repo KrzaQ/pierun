@@ -69,8 +69,8 @@ auto prepareDBConnection(DBSettings s){
     import pierun.core;
     import hibernated.core;
     
-    EntityMetaData schema = new SchemaInfoImpl!(User, LoginSession, Language,
-        Post, PostData, Tag, Link, LinkList);
+    EntityMetaData schema = new SchemaInfoImpl!(KeyValue, Language, Link,
+        LinkList, LoginSession, Post, PostData, Tag, User);
 
     version(USE_PGSQL){
         import ddbc.drivers.pgsqlddbc;

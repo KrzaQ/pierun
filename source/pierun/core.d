@@ -77,3 +77,11 @@ class LinkList
     string name;
     @ManyToMany Link[] links;
 }
+
+class KeyValue
+{
+    @Generated @Id int id;
+
+    @UniqueKey string key;
+    string value;
+}
