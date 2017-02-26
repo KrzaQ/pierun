@@ -1,0 +1,23 @@
+include header
+
+p settings
+
+p Settings list size: #{kvs.length}
+
+
+form(action='settings_raw', method='POST')
+    
+    - foreach(kv; kvs)
+        label #{kv.key}:
+        input(name="value_" ~ kv.key, value=kv.value)
+        
+        br
+
+    label New setting:
+    input(name='new_key', placeholder='key')
+    input(name='new_value', placeholder='value')
+    br
+
+    button(type="submit") send
+
+include footer

@@ -32,6 +32,7 @@ private class DBCache
     private {
         DBSession session;
         Post[int] posts;
+        KeyValue[string] keyValues;
     }
 
     this(DBSession s)
@@ -52,6 +53,61 @@ private class DBCache
             posts[id] = p;
         return p;
     }
+
+    KeyValue getValue(const string key)
+    {
+        auto ptr = key.toLower in keyValues;
+        if(ptr !is null) {
+            return *ptr;
+        }
+
+        KeyValue kv = session
+            .createQuery("FROM KeyValue WHERE key=:Key")
+            .setParameter("Key", key.toLower)
+            .uniqueResult!KeyValue;
+
+        if(kv !is null) {
+            keyValues[key.toLower] = kv;
+        }
+
+        return kv;
+    }
+
+    void setValue(T)(const string key, const T value)
+    {
+        keyValues.remove(key);
+        
+        KeyValue kv = session
+            .createQuery("FROM KeyValue WHERE key=:Key")
+            .setParameter("Key", key.toLower)
+            .uniqueResult!KeyValue;
+
+        if(kv is null) {
+            kv = new KeyValue;
+            kv.key = key.toLower;
+            kv.value = value.to!string;
+            session.save(kv);
+            keyValues[kv.key] = kv;
+        } else {
+            kv.value = value.to!string;
+            session.update(kv);
+        }
+    }
+}
+
+struct BlogInfo
+{
+    DBCache dbCache;
+    string pageTitle;
+
+    auto getSetting(T)(const string key, const T defaultValue = T.init) {
+        auto kv = dbCache.getValue(key);
+        if(kv is null) {
+            return defaultValue;
+        } else {
+            return kv.value.to!T;
+        }
+    }
 }
 
 @requiresAuth
@@ -61,8 +117,10 @@ class WebInterface
         DataSource dataSource;
         DBSession session;
         DBCache dbCache;
-        //SessionVar!(SessionData, "session") sessdionData;
+        AdminWebInterface adminWebInterface;
     }
+
+    @property AdminWebInterface admin() { return adminWebInterface; }
     
     @noRoute
     AuthInfo authenticate(HTTPServerRequest req, HTTPServerResponse res){
@@ -77,6 +135,7 @@ class WebInterface
         this.dataSource = ds;
         this.session = s;
         this.dbCache = new DBCache(s);
+        this.adminWebInterface = new AdminWebInterface(this);
     }
     
     @noAuth
@@ -89,6 +148,7 @@ class WebInterface
     @noAuth
     void getLogin(HTTPServerRequest req, string _error = null)
     {
+        string page_title = "login";
         render!("login.dt", _error);
     }
 
@@ -217,4 +277,50 @@ Nullable!string getTime(ref HTTPServerRequest req) {
     auto diff = Clock.currTime - req.timeCreated;
     ret = diff.to!string;
     return ret;
+}
+
+@requiresAuth
+class AdminWebInterface
+{
+    private {
+        WebInterface parent;
+    }
+
+    this(WebInterface wi) {
+        parent = wi;
+    }
+
+    @noRoute
+    auto authenticate(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        return parent.authenticate(req, res);
+    }
+
+    @auth(Role.admin)
+    void getSettingsRaw(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        postSettingsRaw(req, res);
+    }
+
+    @auth(Role.admin)
+    void postSettingsRaw(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        foreach(k, v; req.form) {
+            if(!k.startsWith("value_"))
+                continue;
+            parent.dbCache.setValue(k[6..$], v);
+        }
+
+        if(req.form.get("new_key").length > 0 &&
+           req.form.get("new_value").length > 0) {
+            parent.dbCache.setValue(req.form["new_key"], req.form["new_value"]);
+        }
+
+        auto kvs = parent.session
+            .createQuery("FROM KeyValue")
+            .list!KeyValue;
+
+        render!("admin/settings.dt", kvs);
+    }
+
 }
