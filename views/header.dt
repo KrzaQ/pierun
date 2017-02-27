@@ -6,16 +6,4 @@ html
     body
         script(type='application/javascript', src='/static/pierun.js')
         script(type='application/javascript', src='/static/jquery-3.1.1.min.js')
-
-        div#header
-            - auto auth = req.getAuth;
-            - if(!auth.isNull)
-                p Hello, <b>#{auth.userName}</b>! 
-                a(href='/add_post') Add Post
-                p |
-                a(href='/logout') Log Out!
-            - else
-                p Hello, anonymous!
-                a(href='/login') Log In!
-
-        hr
+        link(rel='stylesheet', type='text/css', href='/static/pierun.css')

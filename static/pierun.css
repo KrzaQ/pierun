@@ -1,0 +1,45 @@
+body
+{
+    background-color: #543;
+    font-style: "Palatino Linotype", "Alegreya Sans", sans-serif;
+    color: #ccc;
+}
+
+a
+{
+    color: #aad;
+}
+
+.contents
+{
+    /*flex-direction: row;*/
+    display: flex;
+    width: 80em;
+    margin: 0 auto;
+}
+
+.post
+{
+    width: 60em;
+    float: left;
+    position: relative;
+    background-color: #654;
+}
+
+.sidebar
+{
+    position: relative;
+    float: right;
+    width: 20em;
+    /*background-color: #777;*/
+}
+
+.footer
+{
+    /*clear: both;*/
+    display: block;
+    margin: 0 auto;
+    font-size: small;
+    width: 80em;
+    text-align: center;
+}

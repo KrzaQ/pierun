@@ -3,4 +3,5 @@ include header
 h1 Error!
 p #{_error}
 
+include sidebar
 include footer

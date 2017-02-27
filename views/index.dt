@@ -6,4 +6,5 @@ include header
         button(type="submit") Format!
 p(id = 'display')
 
+include sidebar
 include footer

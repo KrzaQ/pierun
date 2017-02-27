@@ -132,6 +132,27 @@ auto prepareDBConnection(DBSettings s){
             sess.save(a);
 
             writefln("New author: %s, email: %s, password: %s", a.name, a.email, password);
+
+            auto set = delegate void(string key, string value) {
+                import std.uni;
+                KeyValue kv = sess
+                    .createQuery("FROM KeyValue WHERE key=:Key")
+                    .setParameter("Key", key.toLower)
+                    .uniqueResult!KeyValue;
+
+                if(kv !is null) {
+                    kv.value = value;
+                    sess.update(kv);
+                } else {
+                    kv = new KeyValue;
+                    kv.key = key.toLower;
+                    kv.value = value;
+                    sess.save(kv);
+                }
+            };
+
+            set("blog_name", "Pierun");
+            set("base_address", "http://localhost/");
         }
     }
 

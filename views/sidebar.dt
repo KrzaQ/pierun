@@ -1,0 +1,15 @@
+div.sidebar
+    - auto auth = req.getAuth;
+    - if(!auth.isNull)
+        | Hello, <b>#{auth.userName}</b>! 
+        ul
+            li
+                a(href='/add_post') Add Post
+            li
+                a(href='/logout') Log Out!
+    - else
+        | Hello, anonymous! 
+        ul
+            li
+                a(href='/login') Log In!
+div(style='clear: both;')

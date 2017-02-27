@@ -20,4 +20,5 @@ form(action='settings_raw', method='POST')
 
     button(type="submit") send
 
+include sidebar
 include footer
