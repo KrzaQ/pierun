@@ -33,8 +33,16 @@ class Tag
 
 class Post
 {
+    enum Status
+    {
+        Ok,
+        Unlisted,
+        Private
+    }
+
     @Generated @Id int id;
     User author;
+    int status = cast(int)Status.Ok;
     DateTime published;
     PostData[] edits;
     Language language;

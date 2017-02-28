@@ -244,6 +244,14 @@ class WebInterface
         enforceHTTP(p !is null, HTTPStatus.notFound,
             "Post %d not found!".format(id));
 
+        if(p.status == Post.Status.Private) {
+            auto auth = req.getAuth;
+
+            enforceHTTP(!auth.isNull && auth.isAdmin, HTTPStatus.notFound,
+                "Post %d not found!".format(id));
+        }
+
+
         render!("post.dt", p);
     }
 
