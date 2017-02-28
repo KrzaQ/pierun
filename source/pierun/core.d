@@ -28,6 +28,7 @@ class Tag
     @Generated @Id int id;
     // TODO: constraint to unique
     string name;
+    string slugName;
 }
 
 class Post

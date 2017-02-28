@@ -1,4 +1,8 @@
 div.sidebar
+
+    a(href='/') Home
+    br
+
     - auto auth = req.getAuth;
     - if(!auth.isNull)
         | Hello, <b>#{auth.userName}</b>! 

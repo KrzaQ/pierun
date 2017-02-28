@@ -7,7 +7,7 @@ import vibe.web.auth;
 
 import hibernated.core;
 
-import pierun.core;
+import pierun.core, pierun.utils.misc;
 
 alias DBSession = hibernated.session.Session;
 
@@ -33,6 +33,7 @@ private class DBCache
         DBSession session;
         Post[int] posts;
         KeyValue[string] keyValues;
+        Tag[string] tags;
     }
 
     this(DBSession s)
@@ -53,6 +54,51 @@ private class DBCache
             posts[id] = p;
         return p;
     }
+
+    Tag getTag(const string name)
+    {
+        auto ptr = name in tags;
+        if(ptr !is null) {
+            return *ptr;
+        }
+
+        Tag t = session
+            .createQuery("FROM Tag WHERE name=:Name")
+            .setParameter("Name", name)
+            .uniqueResult!Tag;
+
+        if(t !is null) {
+            tags[name] = t;
+        }
+
+        return t;
+    }
+
+    void setTag(const string name, string slug = null)
+    {
+        keyValues.remove(name);
+        
+        Tag t = session
+            .createQuery("FROM Tag WHERE name=:Name")
+            .setParameter("Name", name)
+            .uniqueResult!Tag;
+        
+        if(slug is null)
+            slug = name.toSlugForm;
+
+        if(t is null) {
+            import vibe.textfilter.markdown;
+            t = new Tag;
+            t.name = name;
+            t.slugName = slug;
+            session.save(t);
+            tags[name] = t;
+        } else {
+            t.slugName = slug;
+            session.update(t);
+        }
+    }
+
 
     KeyValue getValue(const string key)
     {
@@ -75,7 +121,7 @@ private class DBCache
 
     void setValue(T)(const string key, const T value)
     {
-        keyValues.remove(key);
+        keyValues.remove(key.toLower);
         
         KeyValue kv = session
             .createQuery("FROM KeyValue WHERE key=:Key")
@@ -160,7 +206,8 @@ class WebInterface
             .setParameter("Name", username)
             .uniqueResult!User;
 
-        enforceHTTP(user !is null, HTTPStatus.forbidden, "Username or password incorrect");
+        enforceHTTP(user !is null,
+            HTTPStatus.forbidden, "Username or password incorrect");
 
         import botan.passhash.bcrypt;
 
@@ -215,18 +262,40 @@ class WebInterface
     @auth(Role.admin)
     void postAddPost(HTTPServerRequest req, HTTPServerResponse res,
         string markdown = "", string excerpt = "", string title = "",
-        string language = "EN", string _error = null)
+        string language = "EN", string tags = "", string _error = null)
     {
-        render!("add_post.dt", markdown, excerpt, title, language, _error);
+        render!("add_post.dt", markdown, excerpt,
+                title, language, tags, _error);
     }
 
     @auth(Role.admin) @errorDisplay!postAddPost
     void postSendPost(HTTPServerRequest req, HTTPServerResponse res,
         AuthInfo ai, string markdown, string excerpt, string title,
-        string language)
+        string language, string tags)
     {
         enforceHTTP(language.length == 2, HTTPStatus.badRequest,
             "Language must be two characters long");
+
+        import std.array, std.algorithm, std.regex, std.traits;
+
+        auto getOrMakeTag = delegate Tag(const string name) {
+            import std.stdio;
+            writefln("working on tag: %s", name);
+            auto t = dbCache.getTag(name);
+            if(t is null) {
+                t = new Tag;
+                t.name = name;
+                t.slugName = name.toSlugForm;
+                session.save(t);
+            }
+            return t;
+        };
+
+        auto splitTags = tags
+            .split(ctRegex!`,\s+`)
+            .map!(identity!getOrMakeTag)
+            .array;
+
 
         User u = session.createQuery("FROM User WHERE name=:Name")
             .setParameter("Name", ai.userName)
@@ -244,6 +313,7 @@ class WebInterface
         pd.excerpt = excerpt;
         pd.timestamp = p.published;
         pd.post = p;
+        pd.tags = splitTags;
 
         u.posts ~= p;
 

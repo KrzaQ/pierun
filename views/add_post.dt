@@ -20,6 +20,10 @@ h1 adding post
         label(for='language') Langauge:
         input(name='language', value=language)
         br
+
+        label(for='tags') Tags:
+        input(name='tags', value=tags)
+        br
         
         button(type="submit", formaction='/add_post') preview!
         button(type="submit", formaction='/send_post') send

@@ -17,6 +17,11 @@ div.contents
             hr
             p#edited last edited: #{pd.timestamp}
 
+
+        p Tags:
+            - foreach(tag; pd.tags)
+                div.tag #{tag.name}
+
         hr
     
     include sidebar
