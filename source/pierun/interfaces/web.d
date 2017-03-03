@@ -10,7 +10,9 @@ import hibernated.core;
 import pierun.core;
 import pierun.utils.dbcache, pierun.utils.misc;
 
-import common, admin;
+import pierun.interfaces.common,
+       pierun.interfaces.admin,
+       pierun.interfaces.rss;
 
 @requiresAuth
 class WebInterface
@@ -20,9 +22,11 @@ class WebInterface
         DBSession sessionMember;
         DBCache dbCacheMember;
         AdminWebInterface adminWebInterface;
+        RSSWebInterface rssWebInterace;
     }
 
     @property AdminWebInterface admin() { return adminWebInterface; }
+    @property RSSWebInterface rss() { return rssWebInterace; }
 
     @noRoute @property DBCache dbCache() { return dbCacheMember; }
     @noRoute @property DBSession session() { return sessionMember; }
@@ -41,13 +45,16 @@ class WebInterface
         this.sessionMember = s;
         this.dbCacheMember = new DBCache(s);
         this.adminWebInterface = new AdminWebInterface(this);
+        this.rssWebInterace = new RSSWebInterface(this);
     }
     
     @noAuth
     void index(HTTPServerRequest req, HTTPServerResponse res)
     {
         Post[] posts = session
-            .createQuery("FROM Post WHERE status = 0")
+            .createQuery("SELECT P FROM Post AS P " ~ 
+                         "WHERE status = 0 " ~
+                         "ORDER BY P.published DESC")
             .list!Post;
 
         render!("index.dt", posts);
@@ -84,17 +91,6 @@ class WebInterface
 
         redirect("/");
     }
-
-    //@noAuth
-    //void post(HTTPServerRequest req, string markdown)
-    //{
-    //    import pierun.utils.markdown;
-    //    import std.conv;
-
-    //    markdown = pierun.utils.markdown.parseMarkdown(markdown);
-
-    //    render!("index.dt", markdown);
-    //}
 
     @path("/post/:id/*") @noAuth @errorDisplay!error
     void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)

@@ -1,3 +1,5 @@
+module pierun.interfaces.admin;
+
 import vibe.d;
 import vibe.web.auth;
 
@@ -7,7 +9,7 @@ import pierun.core;
 import pierun.utils.dbcache;
 import pierun.interfaces.web;
 
-import common;
+import pierun.interfaces.common;
 
 @requiresAuth
 class AdminWebInterface

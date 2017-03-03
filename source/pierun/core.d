@@ -36,14 +36,14 @@ class Post
 {
     enum Status
     {
-        Ok,
+        Public,
         Unlisted,
         Private
     }
 
     @Generated @Id int id;
     User author;
-    int status = cast(int)Status.Ok;
+    int status = cast(int)Status.Public;
     DateTime published;
     PostData[] edits;
     Language language;

@@ -1,3 +1,5 @@
+module pierun.interfaces.common;
+
 import pierun.utils.dbcache;
 
 struct AuthInfo
