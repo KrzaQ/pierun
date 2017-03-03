@@ -7,9 +7,7 @@ import vibe.web.auth;
 
 import hibernated.core;
 
-import pierun.core, pierun.utils.misc;
-
-alias DBSession = hibernated.session.Session;
+import pierun.core, pierun.dbcache, pierun.utils.misc;
 
 struct SessionData
 {
@@ -25,120 +23,6 @@ struct AuthInfo
 
     @safe:
     bool isAdmin() const { return this.admin; }
-}
-
-private class DBCache
-{
-    private {
-        DBSession session;
-        Post[int] posts;
-        KeyValue[string] keyValues;
-        Tag[string] tags;
-    }
-
-    this(DBSession s)
-    {
-        this.session = s;
-    }
-
-    auto getPost(int id)
-    {
-        auto ptr = id in posts;
-        if(ptr !is null) return *ptr;
-
-        Post p = session.createQuery("FROM Post WHERE id=:Id")
-            .setParameter("Id", id)
-            .uniqueResult!Post;
-
-        if(p !is null)
-            posts[id] = p;
-        return p;
-    }
-
-    Tag getTag(const string name)
-    {
-        auto ptr = name in tags;
-        if(ptr !is null) {
-            return *ptr;
-        }
-
-        Tag t = session
-            .createQuery("FROM Tag WHERE name=:Name")
-            .setParameter("Name", name)
-            .uniqueResult!Tag;
-
-        if(t !is null) {
-            tags[name] = t;
-        }
-
-        return t;
-    }
-
-    void setTag(const string name, string slug = null)
-    {
-        keyValues.remove(name);
-        
-        Tag t = session
-            .createQuery("FROM Tag WHERE name=:Name")
-            .setParameter("Name", name)
-            .uniqueResult!Tag;
-        
-        if(slug is null)
-            slug = name.toSlugForm;
-
-        if(t is null) {
-            import vibe.textfilter.markdown;
-            t = new Tag;
-            t.name = name;
-            t.slugName = slug;
-            session.save(t);
-            tags[name] = t;
-        } else {
-            t.slugName = slug;
-            session.update(t);
-        }
-    }
-
-
-    KeyValue getValue(const string key)
-    {
-        auto ptr = key.toLower in keyValues;
-        if(ptr !is null) {
-            return *ptr;
-        }
-
-        KeyValue kv = session
-            .createQuery("FROM KeyValue WHERE key=:Key")
-            .setParameter("Key", key.toLower)
-            .uniqueResult!KeyValue;
-
-        if(kv !is null) {
-            keyValues[key.toLower] = kv;
-        }
-
-        return kv;
-    }
-
-    void setValue(T)(const string key, const T value)
-    {
-        keyValues.remove(key.toLower);
-        
-        KeyValue kv = session
-            .createQuery("FROM KeyValue WHERE key=:Key")
-            .setParameter("Key", key.toLower)
-            .uniqueResult!KeyValue;
-
-        if(kv is null) {
-            kv = new KeyValue;
-            kv.key = key.toLower;
-            kv.value = value.to!string;
-            session.save(kv);
-            keyValues[kv.key] = kv;
-        } else {
-            kv.value = value.to!string;
-            session.update(kv);
-        }
-    }
 }
 
 struct BlogInfo
@@ -185,10 +69,13 @@ class WebInterface
     }
     
     @noAuth
-    void index(HTTPServerRequest req)
+    void index(HTTPServerRequest req, HTTPServerResponse res)
     {
-        auto markdown = "";
-        render!("index.dt", markdown);
+        Post[] posts = session
+            .createQuery("FROM Post WHERE status = 0")
+            .list!Post;
+
+        render!("index.dt", posts);
     }
 
     @noAuth
@@ -223,16 +110,16 @@ class WebInterface
         redirect("/");
     }
 
-    @noAuth
-    void post(HTTPServerRequest req, string markdown)
-    {
-        import pierun.utils.markdown;
-        import std.conv;
+    //@noAuth
+    //void post(HTTPServerRequest req, string markdown)
+    //{
+    //    import pierun.utils.markdown;
+    //    import std.conv;
 
-        markdown = pierun.utils.markdown.parseMarkdown(markdown);
+    //    markdown = pierun.utils.markdown.parseMarkdown(markdown);
 
-        render!("index.dt", markdown);
-    }
+    //    render!("index.dt", markdown);
+    //}
 
     @path("/post/:id/*") @noAuth @errorDisplay!error
     void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)
@@ -251,6 +138,9 @@ class WebInterface
                 "Post %d not found!".format(id));
         }
 
+        import std.stdio, std.algorithm;
+        session.refresh(p.edits[$-1]);
+        writefln("Tags: %s", p.edits[$-1].tags.map!(e => e.name).join(", "));
 
         render!("post.dt", p);
     }

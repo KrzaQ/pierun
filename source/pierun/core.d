@@ -12,7 +12,7 @@ class User
     string hashedPassword;
     string salt;
     LoginSession[] sessions;
-    Post[] posts;
+    LazyCollection!Post posts;
 }
 
 class LoginSession
@@ -29,6 +29,7 @@ class Tag
     // TODO: constraint to unique
     string name;
     string slugName;
+    @ManyToMany LazyCollection!PostData revisions;
 }
 
 class Post
@@ -57,7 +58,7 @@ class PostData
     string excerpt;
     Nullable!string gpg;
     DateTime timestamp;
-    @ManyToMany Tag[] tags;
+    @ManyToMany LazyCollection!Tag tags;
 }
 
 class Language
@@ -76,7 +77,7 @@ class Link
     string link;
     string name;
     string altText;
-    @ManyToMany LinkList[] lists;
+    @ManyToMany LazyCollection!LinkList lists;
 }
 
 class LinkList
@@ -84,7 +85,7 @@ class LinkList
     @Generated @Id int id;
 
     string name;
-    @ManyToMany Link[] links;
+    @ManyToMany LazyCollection!Link links;
 }
 
 class KeyValue

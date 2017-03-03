@@ -1,10 +1,28 @@
 include header
-#main
-    form(action="/", method="POST")
-        textarea(name="markdown", id="markdown") #{markdown}
-        br
-        button(type="submit") Format!
-p(id = 'display')
 
-include sidebar
+- import pierun.utils.markdown, pierun.core;
+
+div.contents
+    
+    - foreach(p; posts)
+        - PostData pd = p.edits[$-1];
+        div.post
+            h1.title 
+                a(href=getPostAddress(p.id, pd.title)) #{pd.title}
+
+            p#postinfo Written by #{p.author.name}, #{p.published}
+
+            div.post_contents!= pd.excerpt.parseMarkdown
+
+            p Tags:
+                - if(pd.tags !is null)
+                    - foreach(tag; pd.tags)
+                        div.tag #{tag.name}
+                - if(pd.tags is null)
+                    | :(((((
+
+            hr
+        
+    include sidebar
+
 include footer

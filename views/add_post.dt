@@ -30,7 +30,7 @@ h1 adding post
 
 
 - import pierun.utils.markdown;
-p(id = 'display')!= markdown.parseMarkdown
+p#display!= markdown.parseMarkdown
 
 include sidebar
 include footer
