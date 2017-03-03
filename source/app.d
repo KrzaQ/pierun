@@ -24,7 +24,7 @@ void main()
     import std.file, std.json;
     static import db = hibernated.core;
     import painlessjson;
-    import pierun.api, pierun.webinterface;
+    import pierun.api, pierun.interfaces.web;
 
     const Settings settings = read("config.json")
         .to!string
@@ -36,8 +36,6 @@ void main()
     http_settings.port = settings.port;
     http_settings.bindAddresses = settings.ips.dup;
     http_settings.sessionStore = new MemorySessionStore;
-
-    //listenHTTP(http_settings, &hello);
 
     auto tup = prepareDBConnection(settings.database);
     db.DataSource ds = tup.source;

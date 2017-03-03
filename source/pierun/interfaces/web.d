@@ -1,4 +1,4 @@
-module pierun.webinterface;
+module pierun.interfaces.web;
 
 import std.conv, std.format, std.string, std.typecons;
 
@@ -7,51 +7,26 @@ import vibe.web.auth;
 
 import hibernated.core;
 
-import pierun.core, pierun.dbcache, pierun.utils.misc;
+import pierun.core;
+import pierun.utils.dbcache, pierun.utils.misc;
 
-struct SessionData
-{
-    bool loggedIn = false;
-    string userName;
-    string sessionId;
-}
-
-struct AuthInfo
-{
-    string userName;
-    bool admin;
-
-    @safe:
-    bool isAdmin() const { return this.admin; }
-}
-
-struct BlogInfo
-{
-    DBCache dbCache;
-    string pageTitle;
-
-    auto getSetting(T)(const string key, const T defaultValue = T.init) {
-        auto kv = dbCache.getValue(key);
-        if(kv is null) {
-            return defaultValue;
-        } else {
-            return kv.value.to!T;
-        }
-    }
-}
+import common, admin;
 
 @requiresAuth
 class WebInterface
 {
     private {
         DataSource dataSource;
-        DBSession session;
-        DBCache dbCache;
+        DBSession sessionMember;
+        DBCache dbCacheMember;
         AdminWebInterface adminWebInterface;
     }
 
     @property AdminWebInterface admin() { return adminWebInterface; }
-    
+
+    @noRoute @property DBCache dbCache() { return dbCacheMember; }
+    @noRoute @property DBSession session() { return sessionMember; }
+
     @noRoute
     AuthInfo authenticate(HTTPServerRequest req, HTTPServerResponse res){
         if (!req.session || !req.session.isKeySet("auth"))
@@ -63,8 +38,8 @@ class WebInterface
     this(DataSource ds, DBSession s)
     {
         this.dataSource = ds;
-        this.session = s;
-        this.dbCache = new DBCache(s);
+        this.sessionMember = s;
+        this.dbCacheMember = new DBCache(s);
         this.adminWebInterface = new AdminWebInterface(this);
     }
     
@@ -137,10 +112,6 @@ class WebInterface
             enforceHTTP(!auth.isNull && auth.isAdmin, HTTPStatus.notFound,
                 "Post %d not found!".format(id));
         }
-
-        import std.stdio, std.algorithm;
-        session.refresh(p.edits[$-1]);
-        writefln("Tags: %s", p.edits[$-1].tags.map!(e => e.name).join(", "));
 
         render!("post.dt", p);
     }
@@ -247,48 +218,3 @@ Nullable!string getTime(ref HTTPServerRequest req) {
     return ret;
 }
 
-@requiresAuth
-class AdminWebInterface
-{
-    private {
-        WebInterface parent;
-    }
-
-    this(WebInterface wi) {
-        parent = wi;
-    }
-
-    @noRoute
-    auto authenticate(HTTPServerRequest req, HTTPServerResponse res)
-    {
-        return parent.authenticate(req, res);
-    }
-
-    @auth(Role.admin)
-    void getSettingsRaw(HTTPServerRequest req, HTTPServerResponse res)
-    {
-        postSettingsRaw(req, res);
-    }
-
-    @auth(Role.admin)
-    void postSettingsRaw(HTTPServerRequest req, HTTPServerResponse res)
-    {
-        foreach(k, v; req.form) {
-            if(!k.startsWith("value_"))
-                continue;
-            parent.dbCache.setValue(k[6..$], v);
-        }
-
-        if(req.form.get("new_key").length > 0 &&
-           req.form.get("new_value").length > 0) {
-            parent.dbCache.setValue(req.form["new_key"], req.form["new_value"]);
-        }
-
-        auto kvs = parent.session
-            .createQuery("FROM KeyValue")
-            .list!KeyValue;
-
-        render!("admin/settings.dt", kvs);
-    }
-
-}

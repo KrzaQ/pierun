@@ -1,4 +1,4 @@
-module pierun.dbcache;
+module pierun.utils.dbcache;
 
 import std.conv, std.uni;
 

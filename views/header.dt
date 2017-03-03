@@ -1,4 +1,4 @@
-- import pierun.webinterface;
+- import pierun.interfaces.web;
 doctype html
 html
     head

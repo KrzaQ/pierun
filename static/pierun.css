@@ -1,15 +1,15 @@
 body
 {
-    background-color: #543;
-    font-style: "Palatino Linotype", "Alegreya Sans", sans-serif;
-    color: #ccc;
+    background-color: #2d2d2d;
+    font-family: "Alegreya Sans", "Palatino Linotype", sans-serif;
+    color: #c4c4c4;
 }
 
 a
 {
-    color: #aad;
+    /*font-style: "Palatino Linotype", "Alegreya Sans", sans-serif;*/
+    color: #dbb840;
 }
-
 .contents
 {
     /*flex-direction: row;*/
@@ -23,7 +23,11 @@ a
     width: 60em;
     float: left;
     position: relative;
-    background-color: #654;
+    background-color: #424242;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-left: 10px;
+    border-right: 10px;
 }
 
 .sidebar
@@ -31,6 +35,8 @@ a
     position: relative;
     float: right;
     width: 20em;
+    padding-left: 10px;
+    padding-right: 10px;
     /*background-color: #777;*/
 }
 
