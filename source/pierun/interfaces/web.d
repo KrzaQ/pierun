@@ -144,8 +144,6 @@ class WebInterface
         import std.array, std.algorithm, std.regex, std.traits;
 
         auto getOrMakeTag = delegate Tag(const string name) {
-            import std.stdio;
-            writefln("working on tag: %s", name);
             auto t = dbCache.getTag(name);
             if(t is null) {
                 t = new Tag;
@@ -162,6 +160,18 @@ class WebInterface
             .array;
 
 
+        auto getOrMakeLanguage = delegate Language(const string name) {
+            auto l = dbCache.getLanguage(name);
+            if(l is null) {
+                import std.uni;
+                l = new Language;
+                l.name = name;
+                l.isoCode = name.toUpper;
+                session.save(l);
+            }
+            return l;
+        };
+
         User u = session.createQuery("FROM User WHERE name=:Name")
             .setParameter("Name", ai.userName)
             .uniqueResult!User;
@@ -172,6 +182,7 @@ class WebInterface
         p.author = u;
         p.edits = [pd];
         p.published = cast(DateTime)Clock.currTime;
+        p.language = getOrMakeLanguage(language);
 
         pd.title = title;
         pd.markdown = markdown;

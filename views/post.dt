@@ -1,6 +1,7 @@
 include header
 
-- import pierun.utils.markdown, pierun.core, std.conv, std.format, std.range;
+- import pierun.utils.markdown, pierun.utils.misc, pierun.core;
+- import std.conv, std.format, std.range;
 
 - PostData pd = p.edits[$-1];
 

@@ -9,11 +9,3 @@ static string parseMarkdownImpl(const string md)
 }
 
 alias parseMarkdown = memoize!parseMarkdownImpl;
-
-static string getPostAddress(int id, const string title)
-{
-    import std.format, std.string;
-    return "/post/%s/%s".format(id, title.asSlug);
-}
-
-//alias getPostAddress = memoize!getPostAddressImpl;

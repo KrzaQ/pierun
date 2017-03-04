@@ -15,6 +15,7 @@ class DBCache
         Post[int] posts;
         KeyValue[string] keyValues;
         Tag[string] tags;
+        Language[string] languages;
     }
 
     this(DBSession s)
@@ -34,6 +35,25 @@ class DBCache
         if(p !is null)
             posts[id] = p;
         return p;
+    }
+
+    Language getLanguage(const string code)
+    {
+        auto ptr = code in languages;
+        if(ptr !is null) {
+            return *ptr;
+        }
+
+        Language l = session
+            .createQuery("FROM Language WHERE isoCode=:Code")
+            .setParameter("Code", code)
+            .uniqueResult!Language;
+
+        if(l !is null) {
+            languages[code] = l;
+        }
+
+        return l;
     }
 
     Tag getTag(const string name)

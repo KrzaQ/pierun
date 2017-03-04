@@ -1,6 +1,6 @@
 include header
 
-- import pierun.utils.markdown, pierun.core;
+- import pierun.utils.markdown, pierun.utils.misc, pierun.core;
 
 div.contents
     

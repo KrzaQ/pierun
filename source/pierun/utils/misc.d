@@ -9,6 +9,13 @@ string toSlugForm(const string name)
     return name.asSlug.to!string;
 }
 
+static string getPostAddress(int id, const string title)
+{
+    import std.format, std.string;
+    return "/post/%s/%s".format(id, title.toSlugForm);
+}
+
+
 template dbg(string S, string file = __FILE__, size_t line = __LINE__)
 {
     immutable string dbg = `{ import std.stdio, std.string; ` ~ 
