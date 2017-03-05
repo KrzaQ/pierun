@@ -6,24 +6,25 @@ include header
 - PostData pd = p.edits[$-1];
 
 div.contents
-    div.post
-        h1.title 
-            a(href=getPostAddress(p.id, pd.title)) #{pd.title}
+    div.posts
+        div.post
+            h1.title 
+                a(href=getPostAddress(p.id, pd.title)) #{pd.title}
 
-        p#postinfo Written by #{p.author.name}, #{p.published}
+            p#postinfo Written by #{p.author.name}, #{p.published}
 
-        div.post_contents!= pd.markdown.parseMarkdown
+            div.post_contents!= pd.markdown.parseMarkdown
 
-        - if(pd.timestamp > p.published)
+            - if(pd.timestamp > p.published)
+                hr
+                p#edited last edited: #{pd.timestamp}
+
+
+            p Tags:
+                - foreach(tag; pd.tags)
+                    div.tag #{tag.name}
+
             hr
-            p#edited last edited: #{pd.timestamp}
-
-
-        p Tags:
-            - foreach(tag; pd.tags)
-                div.tag #{tag.name}
-
-        hr
     
     include sidebar
 
