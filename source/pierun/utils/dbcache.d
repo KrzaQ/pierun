@@ -17,7 +17,6 @@ class DBCache
 {
     private {
         DBSession session;
-        //CacheElement!(DBElementDriver!(Post, "id")) posts;
         Cache!Post posts;
         Cache!(KeyValue, "key") keyValues;
         Tag[string] tags;
@@ -26,9 +25,16 @@ class DBCache
 
     this(DBSession s)
     {
+        import std.traits;
+
+        foreach(n; FieldNameTuple!DBCache) {
+            alias ElementType = typeof(mixin("this." ~ n));
+            static if(isInstanceOf!(CacheElement, ElementType)) {
+                mixin("this." ~ n) = ElementType(s);
+            }
+        }
+        
         this.session = s;
-        posts = typeof(posts)(s);
-        keyValues = typeof(keyValues)(s);
     }
 
     auto getPost(int id)
@@ -148,6 +154,7 @@ private struct DBElementDriver(Value, string Key)
 {
     alias ValueType = Value;
     alias KeyType = typeof(mixin(Value.stringof ~ "." ~ Key));
+    enum KeyName = Key;
 
     static ValueType get(DBSession session, const KeyType key)
     {
@@ -235,6 +242,7 @@ private struct CacheElement(Driver, int IdealValuesCount = 1024)
         auto value = this.get(key);
         if(value is null) {
             value = new ValueType;
+            mixin("value." ~ Driver.KeyName) = key;
             updater(value);
             this.set(value);
         } else {
