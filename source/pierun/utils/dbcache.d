@@ -103,7 +103,7 @@ struct CacheElement(Driver, int IdealValuesCount = 1024)
         auto toRemove = data.byKeyValue
             .array
             .sort!((a,b) => a.value.lastAccessed > b.value.lastAccessed)
-            .drop(IdealValuesCount)
+            .drop(cast(int)(IdealValuesCount * 0.75))
             .map!(e => e.key);
 
         foreach(k; toRemove) {
@@ -133,8 +133,8 @@ class DBCache
 {
     private {
         DBSession session;
-        CacheElement!(DBElementDriver!(Post, "id")) posts_;
-        Post[int] posts;
+        CacheElement!(DBElementDriver!(Post, "id")) posts;
+        //Post[int] posts;
         KeyValue[string] keyValues;
         Tag[string] tags;
         Language[string] languages;
@@ -143,22 +143,27 @@ class DBCache
     this(DBSession s)
     {
         this.session = s;
-        posts_ = typeof(posts_)(s);
+        posts = typeof(posts)(s);
     }
 
     auto getPost(int id)
     {
-        auto ptr = id in posts;
-        if(ptr !is null) return *ptr;
-
-        Post p = session.createQuery("FROM Post WHERE id=:Id")
-            .setParameter("Id", id)
-            .uniqueResult!Post;
-
-        if(p !is null)
-            posts[id] = p;
-        return p;
+        return posts.get(id);
     }
+
+    //auto getPost(int id)
+    //{
+    //    auto ptr = id in posts;
+    //    if(ptr !is null) return *ptr;
+
+    //    Post p = session.createQuery("FROM Post WHERE id=:Id")
+    //        .setParameter("Id", id)
+    //        .uniqueResult!Post;
+
+    //    if(p !is null)
+    //        posts[id] = p;
+    //    return p;
+    //}
 
     Language getLanguage(const string code)
     {
