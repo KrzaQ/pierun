@@ -119,15 +119,12 @@ private string toLegitDate(DateTime dt)
     SysTime date = cast(SysTime)dt;
     import std.conv;
 
-    string tz = "";
-
     auto offset = date.timezone.utcOffsetAt(date.stdTime);
-    //if(offset > 1.dur!"seconds" || offset < 1.dur!"seconds") {
-        int h, m;
-        char sign = offset > 1.dur!"seconds" ? '+' : '-';
-        offset.split!("hours", "minutes")(h, m);
-        tz = "%c%02s%02s".format(sign, h, m);
-    //}
+
+    int h, m;
+    char sign = offset > -1.dur!"seconds" ? '+' : '-';
+    offset.split!("hours", "minutes")(h, m);
+    string tz = "%c%02s%02s".format(sign, h, m);
 
     return format(
         "%.3s, %02d %.3s %d %02d:%02d:%02d %s",
