@@ -20,7 +20,7 @@ class DBCache
         Cache!Post posts;
         Cache!(KeyValue, "key") keyValues;
         Cache!(Tag, "name") tags;
-        Language[string] languages;
+        Cache!(Language, "isoCode") languages;
     }
 
     this(DBSession s)
@@ -44,21 +44,7 @@ class DBCache
 
     Language getLanguage(const string code)
     {
-        auto ptr = code in languages;
-        if(ptr !is null) {
-            return *ptr;
-        }
-
-        Language l = session
-            .createQuery("FROM Language WHERE isoCode=:Code")
-            .setParameter("Code", code)
-            .uniqueResult!Language;
-
-        if(l !is null) {
-            languages[code] = l;
-        }
-
-        return l;
+        return languages.get(code);
     }
 
     Tag getTag(const string name)
