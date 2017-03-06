@@ -19,7 +19,7 @@ class DBCache
         DBSession session;
         Cache!Post posts;
         Cache!(KeyValue, "key") keyValues;
-        Tag[string] tags;
+        Cache!(Tag, "name") tags;
         Language[string] languages;
     }
 
@@ -63,90 +63,23 @@ class DBCache
 
     Tag getTag(const string name)
     {
-        auto ptr = name in tags;
-        if(ptr !is null) {
-            return *ptr;
-        }
-
-        Tag t = session
-            .createQuery("FROM Tag WHERE name=:Name")
-            .setParameter("Name", name)
-            .uniqueResult!Tag;
-
-        if(t !is null) {
-            tags[name] = t;
-        }
-
-        return t;
+        return tags.get(name);
     }
 
     void setTag(const string name, string slug = null)
     {
-        tags.remove(name);
-        
-        Tag t = session
-            .createQuery("FROM Tag WHERE name=:Name")
-            .setParameter("Name", name)
-            .uniqueResult!Tag;
-        
-        if(slug is null)
-            slug = name.toSlugForm;
-
-        if(t is null) {
-            import vibe.textfilter.markdown;
-            t = new Tag;
-            t.name = name;
-            t.slugName = slug;
-            session.save(t);
-            tags[name] = t;
-        } else {
-            t.slugName = slug;
-            session.update(t);
-        }
+        tags.setOrUpdate(name, (Tag t) => t.slugName = slug);
     }
 
 
     KeyValue getValue(const string key)
     {
         return keyValues.get(key);
-        //auto ptr = key.toLower in keyValues;
-        //if(ptr !is null) {
-        //    return *ptr;
-        //}
-
-        //KeyValue kv = session
-        //    .createQuery("FROM KeyValue WHERE key=:Key")
-        //    .setParameter("Key", key.toLower)
-        //    .uniqueResult!KeyValue;
-
-        //if(kv !is null) {
-        //    keyValues[key.toLower] = kv;
-        //}
-
-        //return kv;
     }
 
     void setValue(T)(const string key, const T value)
     {
-        auto updater = delegate (KeyValue v) => v.value = value.to!string;
-        keyValues.setOrUpdate(key, updater);
-        //keyValues.remove(key.toLower);
-        
-        //KeyValue kv = session
-        //    .createQuery("FROM KeyValue WHERE key=:Key")
-        //    .setParameter("Key", key.toLower)
-        //    .uniqueResult!KeyValue;
-
-        //if(kv is null) {
-        //    kv = new KeyValue;
-        //    kv.key = key.toLower;
-        //    kv.value = value.to!string;
-        //    session.save(kv);
-        //    keyValues[kv.key] = kv;
-        //} else {
-        //    kv.value = value.to!string;
-        //    session.update(kv);
-        //}
+        keyValues.setOrUpdate(key, (KeyValue v) => v.value = value.to!string);
     }
 }
 
