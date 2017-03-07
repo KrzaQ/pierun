@@ -2,7 +2,7 @@ include header
 
 h1 adding post
 
-#main
+div.contents
     - if(_error !is null)
         p ERROR: #{_error}
 
@@ -29,8 +29,8 @@ h1 adding post
         button(type="submit", formaction='/send_post') send
 
 
-- import pierun.utils.markdown;
-p#display!= markdown.parseMarkdown
+    - import pierun.utils.markdown;
+    #display!= markdown.parseMarkdown
 
-include sidebar
+    include sidebar
 include footer

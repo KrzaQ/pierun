@@ -55,6 +55,14 @@ class PostData
 
 class Comment
 {
+    enum Status
+    {
+        AwaitingModeration,
+        Public,
+        Private,
+        Hidden
+    }
+
     @Generated @Id int id;
     @Null Post post;
     @Null Comment parent;
@@ -63,6 +71,7 @@ class Comment
     string authorName;
     string email;
     string website;
+    int status = cast(int)Status.AwaitingModeration;
     
     string markdown;
     

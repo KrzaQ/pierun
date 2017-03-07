@@ -26,6 +26,32 @@ div.contents
 
             hr
     
+        div.comments
+
+        div.add-comment
+            form(method="POST")
+                div
+                    label(for='author') Author:
+                    input(name='author')
+
+
+                    label(for='email') Email:
+                    input(name='author', placeholder='optional')
+
+
+                    label(for='website') Website:
+                    input(name='website', placeholder='optional')
+
+                textarea(name="markdown", id="markdown")
+                br
+
+                button(type="submit", formaction='/preview_comment') preview!
+                button(type="submit", formaction='/send_comment') send
+
+
+        - import pierun.utils.markdown;
+        #display
+
     include sidebar
 
 include footer
