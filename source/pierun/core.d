@@ -11,16 +11,7 @@ class User
     string email;
     string hashedPassword;
     string salt;
-    LoginSession[] sessions;
     LazyCollection!Post posts;
-}
-
-class LoginSession
-{
-    @Generated @Id int id;
-    User user;
-    string sessionId;
-    DateTime expires;
 }
 
 class Tag
@@ -47,6 +38,7 @@ class Post
     DateTime published;
     PostData[] edits;
     Language language;
+    Comment[] comments;
 }
 
 class PostData
@@ -56,9 +48,31 @@ class PostData
     string title;
     string markdown;
     string excerpt;
-    Nullable!string gpg;
+    string gpg;
     DateTime timestamp;
     @ManyToMany LazyCollection!Tag tags;
+}
+
+class Comment
+{
+    @Generated @Id int id;
+    @Null Post post;
+    @Null Comment parent;
+
+    @Null User author;
+    string authorName;
+    string email;
+    string website;
+    
+    string markdown;
+    
+    string ip;
+    string host;
+    DateTime timestamp;
+
+    string gpg;
+
+    Comment[] children;
 }
 
 class Language

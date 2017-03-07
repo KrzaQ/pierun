@@ -57,7 +57,8 @@ void main()
     listenHTTP(http_settings, router);
 
     import std.format;
-    logInfo("Please open http://%s:%s/ in your browser.".format(settings.ips[0], settings.port));
+    logInfo("Please open http://%s:%s/ in your browser."
+        .format(settings.ips[0], settings.port));
 
     lowerPrivileges();
     runEventLoop();
@@ -67,8 +68,8 @@ auto prepareDBConnection(DBSettings s){
     import pierun.core;
     import hibernated.core;
     
-    EntityMetaData schema = new SchemaInfoImpl!(KeyValue, Language, Link,
-        LinkList, LoginSession, Post, PostData, Tag, User);
+    EntityMetaData schema = new SchemaInfoImpl!(Comment, KeyValue, Language,
+        Link, LinkList, Post, PostData, Tag, User);
 
     version(USE_PGSQL){
         import ddbc.drivers.pgsqlddbc;
@@ -123,13 +124,15 @@ auto prepareDBConnection(DBSettings s){
 
             import botan.passhash.bcrypt, botan.rng.auto_rng;
 
-            a.hashedPassword = generateBcrypt(password ~ a.salt, new AutoSeededRNG);
+            a.hashedPassword =
+                generateBcrypt(password ~ a.salt, new AutoSeededRNG);
 
             assert(checkBcrypt(password ~ a.salt, a.hashedPassword));
 
             sess.save(a);
 
-            writefln("New author: %s, email: %s, password: %s", a.name, a.email, password);
+            writefln("New author: %s, email: %s, password: %s",
+                a.name, a.email, password);
 
             auto set = delegate void(string key, string value) {
                 import std.uni;
@@ -150,7 +153,7 @@ auto prepareDBConnection(DBSettings s){
             };
 
             set("blog_name", "Pierun");
-            set("base_address", "http://localhost/");
+            set("blog_address", "http://localhost/");
         }
     }
 

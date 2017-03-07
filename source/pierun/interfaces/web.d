@@ -190,6 +190,7 @@ class WebInterface
         pd.timestamp = p.published;
         pd.post = p;
         pd.tags = splitTags;
+        pd.gpg = "";
 
         u.posts ~= p;
 
