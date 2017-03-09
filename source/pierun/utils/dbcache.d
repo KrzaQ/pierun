@@ -21,6 +21,9 @@ class DBCache
         Cache!(KeyValue, "key") keyValues;
         Cache!(Tag, "name") tags;
         Cache!(Language, "isoCode") languages;
+        Cache!Comment comments;
+
+        CacheList!Post postLists;
     }
 
     this(DBSession s)
@@ -30,6 +33,9 @@ class DBCache
         foreach(n; FieldNameTuple!DBCache) {
             alias ElementType = typeof(mixin("this." ~ n));
             static if(isInstanceOf!(CacheElement, ElementType)) {
+                mixin("this." ~ n) = ElementType(s);
+            }
+            static if(isInstanceOf!(CacheList, ElementType)) {
                 mixin("this." ~ n) = ElementType(s);
             }
         }
@@ -57,7 +63,6 @@ class DBCache
         tags.setOrUpdate(name, (Tag t) => t.slugName = slug);
     }
 
-
     KeyValue getValue(const string key)
     {
         return keyValues.get(key);
@@ -66,6 +71,16 @@ class DBCache
     void setValue(T)(const string key, const T value)
     {
         keyValues.setOrUpdate(key, (KeyValue v) => v.value = value.to!string);
+    }
+
+    auto getPostsByLanguage(const string language)
+    {
+        return postLists.get(
+            "SELECT P FROM Post AS P " ~
+            "WHERE status = 0 AND language.isoCode = :Lang " ~
+            "ORDER BY P.published DESC",
+            BoundValue("Lang", language)
+        );
     }
 }
 
@@ -202,5 +217,121 @@ private struct CacheElement(Driver, int IdealValuesCount = 1024)
     private {
         DBSession session;
         Element[KeyType] data;
+    }
+}
+
+private struct BoundValue
+{
+    this(T)(const string k, const T v)
+    {
+        import std.conv;
+        key = k;
+        value = v.to!string;
+    }
+
+    int opCmp(ref const BoundValue o)
+    {
+        import std.algorithm;
+        int r = cmp(key, o.key);
+        if(r != 0) {
+            return r;
+        } else {
+            return cmp(value, o.value);
+        }
+    }
+
+    string key;
+    string value;
+}
+
+private struct CacheList(Value, int IdealValuesCount = 1024)
+{
+    alias ValueList = Value[];
+
+    struct Key
+    {
+        import std.typecons;
+        string query;
+        BoundValue[] boundValues;
+    }
+
+    this(DBSession s)
+    {
+        this.session = s;
+    }
+
+    ValueList get(Param...)(string query, Param params)
+    {
+        import std.array, std.algorithm, std.range;
+        Key k;
+        k.query = query;
+        k.boundValues = sort([params]).array;
+
+        auto ptr = k in data;
+
+        if(ptr !is null) {
+            import std.datetime;
+            ptr.lastAccessed = Clock.currTime;
+            return ptr.value;
+        }
+
+        auto bindValues = function(Query q, BoundValue[] vals) {
+            foreach(v; vals) {
+                q = q.setParameter(v.key, v.value);
+            }
+            return q;
+        };
+
+        auto value = session
+            .createQuery(k.query)
+            .identity!(bindValues)(k.boundValues)
+            .list!Value;
+
+        if(value !is null && value.length > 0) {
+            data[k] = Element(value);
+        }
+
+        return value;
+    }
+
+    void reset()
+    {
+        data.clear;
+    }
+
+    void gc()
+    {
+        if(data.length < 2 * IdealValuesCount)
+            return;
+
+        import std.algorithm, std.array, std.range;
+        auto toRemove = data.byKeyValue
+            .array
+            .sort!((a,b) => a.value.lastAccessed > b.value.lastAccessed)
+            .drop(cast(int)(IdealValuesCount * 0.75))
+            .map!(e => e.key);
+
+        foreach(k; toRemove) {
+            data.remove(k);
+        }
+    }
+
+    private struct Element
+    {
+        import std.datetime;
+
+        this(ValueList value)
+        {
+            this.value = value;
+            this.lastAccessed = Clock.currTime;
+        }
+
+        ValueList value;
+        SysTime lastAccessed;
+    }
+
+    private {
+        DBSession session;
+        Element[Key] data;
     }
 }

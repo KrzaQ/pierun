@@ -51,11 +51,7 @@ class WebInterface
     @noAuth
     void index(HTTPServerRequest req, HTTPServerResponse res)
     {
-        Post[] posts = session
-            .createQuery("SELECT P FROM Post AS P " ~ 
-                         "WHERE status = 0 " ~
-                         "ORDER BY P.published DESC")
-            .list!Post;
+        Post[] posts = dbCache.getPostsByLanguage("EN");
 
         render!("index.dt", posts);
     }
@@ -116,6 +112,19 @@ class WebInterface
     void getPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
     {
         getPostIdName(req, res);
+    }
+
+    @noAuth @errorDisplay!error
+    void postSendComment(HTTPServerRequest req, HTTPServerResponse res,
+        string author, string email, string website, string markdown,
+        string parentId = null)
+    {
+        auto c = new Comment;
+        auto auth = req.getAuth;
+
+        if(!auth.isNull) {
+            //c.author = 
+        }
     }
 
     @auth(Role.admin)
