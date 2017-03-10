@@ -6,6 +6,7 @@ struct AuthInfo
 {
     string userName;
     bool admin;
+    int userId;
 
     @safe:
     bool isAdmin() const { return this.admin; }

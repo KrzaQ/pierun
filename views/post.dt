@@ -28,29 +28,49 @@ div.contents
     
         div.comments
 
-        div.add-comment
-            form(method="POST")
-                div
-                    label(for='author') Author:
-                    input(name='author')
+            - foreach(c; comments)
+                - if(c.status == Comment.Status.Public)
+                    div.comment
+                        div.comment-data
+                            - if(c.author !is null)
+                                p
+                                    b!=c.author.name
+                            - else
+                                p #{c.authorName}
+
+                            p #{c.timestamp}
+
+                            - if(c.website.length > 0)
+                                a(href=c.website) website
+                        div.comment-itself!=c.markdown.parseMarkdown
+                    hr
 
 
-                    label(for='email') Email:
-                    input(name='author', placeholder='optional')
+            div.add-comment
+                form(action='/send_comment', method="POST")
+                    div
+                        label(for='author') Author:
+                        input(name='author')
 
 
-                    label(for='website') Website:
-                    input(name='website', placeholder='optional')
-
-                textarea(name="markdown", id="markdown")
-                br
-
-                button(type="submit", formaction='/preview_comment') preview!
-                button(type="submit", formaction='/send_comment') send
+                        label(for='email') Email:
+                        input(name='email', placeholder='optional')
 
 
-        - import pierun.utils.markdown;
-        #display
+                        label(for='website') Website:
+                        input(name='website', placeholder='optional')
+
+                    textarea(name="markdown", id="markdown")
+                    br
+
+                    input(type="hidden", name="postId", value=p.id)
+
+                    button(type="submit", formaction='/preview_comment', name="preview") preview!
+                    input(type="submit", name="send", value="send")
+
+
+            - import pierun.utils.markdown;
+            #display
 
     include sidebar
 

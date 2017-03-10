@@ -82,10 +82,17 @@ class WebInterface
         AuthInfo ai;
         ai.userName = user.name;
         ai.admin = true;
+        ai.userId = user.id;
         req.session = res.startSession;
         req.session.set("auth", ai);
 
         redirect("/");
+    }
+
+    @path("/post/:id") @noAuth @errorDisplay!error
+    void getPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    {
+        getPostIdName(req, res);
     }
 
     @path("/post/:id/*") @noAuth @errorDisplay!error
@@ -105,26 +112,109 @@ class WebInterface
                 "Post %d not found!".format(id));
         }
 
-        render!("post.dt", p);
+        auto comments = dbCache.getCommentsByPost(p);
+        render!("post.dt", p, comments);
     }
 
-    @path("/post/:id") @noAuth @errorDisplay!error
-    void getPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    // Workaround for older browsers that do not support HTML's 
+    // formaction attribute.
+    @path("/post/:id/*") @noAuth @errorDisplay!error
+    void postPostId(scope HTTPServerRequest req, scope HTTPServerResponse res,
+        int postId)
     {
-        getPostIdName(req, res);
+        import std.conv;
+        auto parentComment = "parentCommentId" in req.form;
+
+        postPreviewComment(req, res, postId,
+            req.form["author"], req.form["email"], req.form["website"],
+            req.form["markdown"], parentComment ? (*parentComment).to!int : 0);
+    }
+
+    // Workaround for older browsers that do not support HTML's 
+    // formaction attribute.
+    @path("/post/:id") @noAuth @errorDisplay!error
+    void postPostId(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    {
+        import std.conv;
+        postPostId(req, res, req.form["postId"].to!int);
     }
 
     @noAuth @errorDisplay!error
-    void postSendComment(HTTPServerRequest req, HTTPServerResponse res,
-        string author, string email, string website, string markdown,
-        string parentId = null)
+    void postPreviewComment(scope HTTPServerRequest req,
+        scope HTTPServerResponse res, int postId, string author="",
+        string email="", string website="", string markdown="",
+        int parentCommentId = 0, string _error = null)
     {
-        auto c = new Comment;
-        auto auth = req.getAuth;
+        Comment parentComment;
 
-        if(!auth.isNull) {
-            //c.author = 
+        if(parentCommentId > 0) {
+            parentComment = dbCache.getComment(parentCommentId);
         }
+
+        Post post = dbCache.getPost(postId);
+
+        render!("preview_comment.dt", author, email, website, markdown,
+            parentComment, post, _error);
+    }
+
+    @noAuth @errorDisplay!error
+    void postSendComment(scope HTTPServerRequest req,
+        scope HTTPServerResponse res, int postId, string author,
+        string email="", string website="", string markdown="",
+        int parentCommentId = 0, string _error = null)
+    {
+        enforceHTTP(markdown.length > 0, HTTPStatus.badRequest,
+            "Content required");
+
+        // Workaround for older browsers that do not support HTML's 
+        // formaction attribute.
+        auto preview = "preview" in req.form;
+        if(preview !is null) {
+            postPreviewComment(req, res, postId, author, email, website,
+                markdown, parentCommentId, _error);
+            return;
+        }
+
+        auto post = dbCache.getPost(postId);
+
+        enforceHTTP(post !is null, HTTPStatus.badRequest,
+            "Cannot find post with id %s".format(postId));
+
+        auto c = new Comment;
+        c.post = post;
+
+        auto auth = req.getAuth;
+        if(!auth.isNull) {
+            c.author = dbCache.getUser(auth.userId);
+            c.status = Comment.Status.Public;
+        }
+
+        c.authorName = c.author is null ? author : c.author.name;
+
+        enforceHTTP(c.authorName.length > 0, HTTPStatus.badRequest,
+            "Name required");
+
+        c.email = email;
+        c.website = website;
+        c.markdown = markdown;
+        c.timestamp = cast(DateTime)Clock.currTime;
+
+        // todo
+        c.ip = "";
+        c.host = "";
+        c.gpg = "";
+
+        // set parent - also todo
+
+        dbCache.setComment(c);
+
+        if(post is null) {
+            redirect("/");
+            return;
+        }
+
+        auto pd = post.edits[$-1];
+        redirect(getPostAddress(post.id, pd.title));      
     }
 
     @auth(Role.admin)

@@ -17,13 +17,16 @@ class DBCache
 {
     private {
         DBSession session;
-        Cache!Post posts;
-        Cache!(KeyValue, "key") keyValues;
-        Cache!(Tag, "name") tags;
-        Cache!(Language, "isoCode") languages;
+
         Cache!Comment comments;
+        Cache!(KeyValue, "key") keyValues;
+        Cache!(Language, "isoCode") languages;
+        Cache!Post posts;
+        Cache!(Tag, "name") tags;
+        Cache!User users;
 
         CacheList!Post postLists;
+        CacheList!Comment commentLists;
     }
 
     this(DBSession s)
@@ -46,6 +49,48 @@ class DBCache
     auto getPost(int id)
     {
         return posts.get(id);
+    }
+
+    auto getPostsByLanguage(const string language)
+    {
+        return postLists.get(
+            "SELECT P FROM Post AS P " ~
+            "WHERE status = 0 AND language.isoCode = :Lang " ~
+            "ORDER BY P.published DESC",
+            BoundValue("Lang", language)
+        );
+    }
+
+    auto getComment(int id)
+    {
+        return comments.get(id);
+    }
+
+    void setComment(Comment c)
+    {
+        comments.set(c);
+        commentLists.reset;
+    }
+
+    void updateComment(Comment c)
+    {
+        comments.update(c);
+        commentLists.reset;
+    }
+
+    auto getCommentsByPost(Post p)
+    {
+        return commentLists.get(
+            "SELECT C FROM Comment AS C " ~
+            "WHERE post.id = :Post " ~
+            "ORDER BY C.id ASC",
+            BoundValue("Post", p.id)
+        );
+    }
+
+    auto getUser(int id)
+    {
+        return users.get(id);
     }
 
     Language getLanguage(const string code)
@@ -71,16 +116,6 @@ class DBCache
     void setValue(T)(const string key, const T value)
     {
         keyValues.setOrUpdate(key, (KeyValue v) => v.value = value.to!string);
-    }
-
-    auto getPostsByLanguage(const string language)
-    {
-        return postLists.get(
-            "SELECT P FROM Post AS P " ~
-            "WHERE status = 0 AND language.isoCode = :Lang " ~
-            "ORDER BY P.published DESC",
-            BoundValue("Lang", language)
-        );
     }
 }
 
@@ -116,12 +151,13 @@ private struct DBElementDriver(Value, string Key)
     }
 }
 
-private struct CacheElement(Driver, int IdealValuesCount = 1024)
+private struct CacheElement(Driver, int IdealCacheSize = 1024)
 {
     import std.datetime;
 
     alias ValueType = Driver.ValueType;
     alias KeyType = Driver.KeyType;
+    enum IdealSize = IdealCacheSize;
 
     this(DBSession session)
     {
@@ -159,6 +195,7 @@ private struct CacheElement(Driver, int IdealValuesCount = 1024)
     void remove(ValueType value)
     {
         Driver.remove(session, value);
+        data.remove(mixin("value." ~ Driver.KeyName));
     }
 
     void set(ValueType value)
@@ -182,23 +219,6 @@ private struct CacheElement(Driver, int IdealValuesCount = 1024)
         } else {
             updater(value);
             this.update(value);
-        }
-    }
-
-    void gc()
-    {
-        if(data.length < 2 * IdealValuesCount)
-            return;
-
-        import std.algorithm, std.array, std.range;
-        auto toRemove = data.byKeyValue
-            .array
-            .sort!((a,b) => a.value.lastAccessed > b.value.lastAccessed)
-            .drop(cast(int)(IdealValuesCount * 0.75))
-            .map!(e => e.key);
-
-        foreach(k; toRemove) {
-            data.remove(k);
         }
     }
 
@@ -244,9 +264,10 @@ private struct BoundValue
     string value;
 }
 
-private struct CacheList(Value, int IdealValuesCount = 1024)
+private struct CacheList(Value, int IdealCacheSize = 1024)
 {
     alias ValueList = Value[];
+    enum IdealSize = IdealCacheSize;
 
     struct Key
     {
@@ -299,23 +320,6 @@ private struct CacheList(Value, int IdealValuesCount = 1024)
         data.clear;
     }
 
-    void gc()
-    {
-        if(data.length < 2 * IdealValuesCount)
-            return;
-
-        import std.algorithm, std.array, std.range;
-        auto toRemove = data.byKeyValue
-            .array
-            .sort!((a,b) => a.value.lastAccessed > b.value.lastAccessed)
-            .drop(cast(int)(IdealValuesCount * 0.75))
-            .map!(e => e.key);
-
-        foreach(k; toRemove) {
-            data.remove(k);
-        }
-    }
-
     private struct Element
     {
         import std.datetime;
@@ -333,5 +337,22 @@ private struct CacheList(Value, int IdealValuesCount = 1024)
     private {
         DBSession session;
         Element[Key] data;
+    }
+}
+
+private void collect(T)(T t)
+{
+    if(t.data.length < 2 * T.IdealSize)
+        return;
+
+    import std.algorithm, std.array, std.range;
+    auto toRemove = t.data.byKeyValue
+        .array
+        .sort!((a,b) => a.value.lastAccessed > b.value.lastAccessed)
+        .drop(cast(int)(T.IdealSize * 0.75))
+        .map!(e => e.key);
+
+    foreach(k; toRemove) {
+        t.data.remove(k);
     }
 }

@@ -64,7 +64,7 @@ class Comment
     }
 
     @Generated @Id int id;
-    @Null Post post;
+    Post post;
     @Null Comment parent;
 
     @Null User author;

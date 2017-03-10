@@ -51,6 +51,16 @@ a:active {
     border-right: 10px;
 }
 
+.comments
+{
+    flex-direction: column;
+}
+
+.comment-data
+{
+    flex-direction: row;
+}
+
 .sidebar
 {
     position: relative;
