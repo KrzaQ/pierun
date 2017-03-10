@@ -78,6 +78,12 @@ class DBCache
         commentLists.reset;
     }
 
+    void removeComment(Comment c)
+    {
+        comments.remove(c);
+        commentLists.reset;
+    }
+
     auto getCommentsByPost(Post p)
     {
         return commentLists.get(
@@ -85,6 +91,17 @@ class DBCache
             "WHERE post.id = :Post " ~
             "ORDER BY C.id ASC",
             BoundValue("Post", p.id)
+        );
+    }
+
+    auto getCommentsAwaitingModeration()
+    {
+        import std.conv;
+        return commentLists.get(
+            "SELECT C FROM Comment AS C " ~
+            "WHERE status =  " ~
+            Comment.Status.AwaitingModeration.to!int.to!string ~
+            " ORDER BY C.id ASC"
         );
     }
 
@@ -286,7 +303,10 @@ private struct CacheList(Value, int IdealCacheSize = 1024)
         import std.array, std.algorithm, std.range;
         Key k;
         k.query = query;
-        k.boundValues = sort([params]).array;
+        static if(params.length > 0)
+            k.boundValues = sort([params]).array;
+        else
+            k.boundValues = [];
 
         auto ptr = k in data;
 
@@ -308,9 +328,7 @@ private struct CacheList(Value, int IdealCacheSize = 1024)
             .identity!(bindValues)(k.boundValues)
             .list!Value;
 
-        if(value !is null && value.length > 0) {
-            data[k] = Element(value);
-        }
+        data[k] = Element(value);
 
         return value;
     }

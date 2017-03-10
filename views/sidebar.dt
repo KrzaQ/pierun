@@ -10,6 +10,8 @@ div.sidebar
             li
                 a(href='/add_post') Add Post
             li
+                a(href='/admin/moderate_new_comments') Moderate New Comments
+            li
                 a(href='/logout') Log Out!
     - else
         | Hello, anonymous! 

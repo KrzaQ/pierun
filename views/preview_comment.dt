@@ -1,0 +1,52 @@
+include header
+
+- import pierun.utils.markdown, pierun.utils.misc, pierun.core;
+- import std.conv, std.format, std.range;
+
+- PostData pd = post.edits[$-1];
+
+div.contents
+    div.posts
+        div.post
+            h1.title><
+                | Replying to '
+                a(href=getPostAddress(post.id, pd.title)) #{pd.title}
+                |'
+        div.comments
+
+            div.add-comment
+                form(action='/send_comment', method="POST")
+                    div
+                        label(for='author') Author:
+                        input(name='author', value=author)
+
+
+                        label(for='email') Email:
+                        - if(email.length)
+                            input(name='email', value=email)
+                        - else 
+                            input(name='email', placeholder='optional')
+
+
+                        label(for='website') Website:
+
+                        - if(website.length)
+                            input(name='website', value=website)
+                        - else 
+                            input(name='website', placeholder='optional')
+
+                    textarea(name="markdown", id="markdown")
+                        |=markdown
+                    br
+
+                    input(type="hidden", name="postId", value=post.id)
+                    button(type="submit", formaction='/preview_comment', name="preview") preview!
+                    input(type="submit", action='/send_comment', name="send", value="send")
+
+
+            - import pierun.utils.markdown;
+            #display!= markdown.parseMarkdown
+
+include sidebar
+
+include footer

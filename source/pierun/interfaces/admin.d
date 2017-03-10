@@ -18,6 +18,9 @@ class AdminWebInterface
         WebInterface parent;
     }
 
+    @noRoute @property
+    auto dbCache() { return parent.dbCache; }
+
     this(WebInterface wi) {
         parent = wi;
     }
@@ -55,4 +58,61 @@ class AdminWebInterface
         render!("admin/settings.dt", kvs);
     }
 
+    @auth(Role.admin)
+    void getModerateNewComments(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        auto comments = dbCache.getCommentsAwaitingModeration;
+
+        render!("admin/moderate_new_comments.dt", comments);
+    }
+
+
+    @auth(Role.admin)
+    void postModerateNewComments(HTTPServerRequest req, HTTPServerResponse res,
+        int commentId, string author, string email, string website,
+        string markdown, string status)
+    {
+        import std.conv;
+
+        auto c = dbCache.getComment(commentId);
+
+        enforceHTTP(c !is null, HTTPStatus.badRequest,
+            "Cannot find post with id %s".format(commentId));
+
+        if(author != c.authorName) {
+            // TODO: assign user if there is any
+            c.author = null;
+            c.authorName = author;
+        }
+
+        c.email = email;
+        c.website = website;
+        c.markdown = markdown;
+        c.status = status.to!(Comment.Status);
+
+        // TODO: remove workaround
+        c.ip = c.gpg = c.host = "";
+
+        dbCache.updateComment(c);
+
+        auto comments = dbCache.getCommentsAwaitingModeration;
+
+        render!("admin/moderate_new_comments.dt", comments);
+    }
+
+    @auth(Role.admin)
+    void postDeleteComment(HTTPServerRequest req, HTTPServerResponse res,
+        int commentId)
+    {
+        import std.conv;
+
+        auto c = dbCache.getComment(commentId);
+
+        enforceHTTP(c !is null, HTTPStatus.badRequest,
+            "Cannot find post with id %s".format(commentId));
+
+        dbCache.removeComment(c);
+
+        redirect("/");
+    }
 }

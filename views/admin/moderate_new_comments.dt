@@ -1,0 +1,44 @@
+include header
+
+- import pierun.core;
+- import std.traits, std.conv;
+
+div.contents
+    div.posts
+        div.comments
+
+            - foreach(c; comments)
+                div.add-comment
+                    form(action='/admin/moderate_new_comments', method="POST")
+                        div
+                            label(for='author') Author:
+                            input(name='author', value=c.authorName)
+
+                            label(for='email') Email:
+                            input(name='email', value=c.email)
+
+                            label(for='website') Website:
+                            input(name='website', value=c.website)
+
+                        textarea(name="markdown", id="markdown") #{c.markdown}
+                        br
+
+                        select(name="status")
+                            - foreach(s; EnumMembers!(Comment.Status))
+                                - if(s == c.status)
+                                    option(value=s.to!string, selected) #{s}
+                                - else
+                                    option(value=s.to!string) #{s}
+
+                        input(type="hidden", name="commentId", value=c.id)
+                        input(type="submit", name="send", value="update")
+                        
+                    form(action='/admin/delete_comment', method="POST")
+                        input(type="hidden", name="commentId", value=c.id)
+                        input(type="submit", name="delete", value="delete")
+                hr
+                hr
+
+    include sidebar
+
+include footer
