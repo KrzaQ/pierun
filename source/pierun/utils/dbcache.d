@@ -22,6 +22,7 @@ class DBCache
         Cache!(KeyValue, "key") keyValues;
         Cache!(Language, "isoCode") languages;
         Cache!Post posts;
+        Cache!PostData revisions;
         Cache!(Tag, "name") tags;
         Cache!User users;
 
@@ -51,6 +52,23 @@ class DBCache
         return posts.get(id);
     }
 
+    auto setPost(Post p)
+    {
+        posts.set(p);
+        users.update(p.author);
+        revisions.set(p.data);
+        postLists.reset;
+    }
+
+    auto updatePost(Post p, PostData pd)
+    {
+        p.data.isCurrent = false;
+        pd.isCurrent = true;
+        posts.update(p);
+        revisions.setOrUpdate(pd.id, (ref PostData o) => o = pd);
+        postLists.reset;
+    }
+
     auto getPostsByLanguage(const string language)
     {
         return postLists.get(
@@ -58,6 +76,21 @@ class DBCache
             "WHERE status = 0 AND language.isoCode = :Lang " ~
             "ORDER BY P.published DESC",
             BoundValue("Lang", language)
+        );
+    }
+
+    auto getPostsByLanguageTag(const string language, const string tag)
+    {
+        return postLists.get(
+            "SELECT P FROM Post AS P " ~
+            "JOIN FETCH P.revisions AS R " ~
+            "JOIN R.tags as T " ~
+            "WHERE status = 0 AND language.isoCode = :Lang " ~
+            "AND R.isCurrent = 1 " ~
+            "AND T.slugName = :Tag " ~
+            "ORDER BY P.published DESC",
+            BoundValue("Lang", language.toUpper),
+            BoundValue("Tag", tag)
         );
     }
 
@@ -122,7 +155,9 @@ class DBCache
 
     void setTag(const string name, string slug = null)
     {
-        tags.setOrUpdate(name, (Tag t) => t.slugName = slug);
+        tags.setOrUpdate(name, delegate void(Tag t){
+            if(slug) t.slugName = slug;
+        });
     }
 
     KeyValue getValue(const string key)

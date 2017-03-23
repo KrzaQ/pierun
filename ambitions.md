@@ -27,7 +27,7 @@ If anything can be treated as a collection (i.e. that matches a certain predicat
 
 ## RSS
 
-# comments
+# comments ✓
 
 ## captcha/anti-spam
 

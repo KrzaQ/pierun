@@ -36,9 +36,11 @@ class Post
     User author;
     int status = cast(int)Status.Public;
     DateTime published;
-    PostData[] edits;
+    PostData[] revisions;
     Language language;
     Comment[] comments;
+
+    PostData data(){ return revisions[$-1]; }
 }
 
 class PostData
@@ -50,6 +52,7 @@ class PostData
     string excerpt;
     string gpg;
     DateTime timestamp;
+    ubyte isCurrent;
     @ManyToMany LazyCollection!Tag tags;
 }
 

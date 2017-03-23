@@ -87,18 +87,17 @@ private auto toRSSItem(Post p, string blogAddress)
     import arsd.dom, std.format, std.conv;
     import pierun.utils.markdown, pierun.utils.misc;
 
-    auto pd = p.edits[$-1];
     auto item = new Element("item");
-    item.addChild("title", pd.title);
+    item.addChild("title", p.data.title);
     item.addChild("author", "%s (%s)".format(p.author.email, p.author.name));
 
-    string permalink = blogAddress ~ getPostAddress(p.id, pd.title);
+    string permalink = blogAddress ~ getPostAddress(p.id, p.data.title);
 
     item.addChild("link").innerText = permalink;
     item.addChild("guid", permalink);
 
     item.addChild("pubDate", p.published.toLegitDate);
-    item.addChild("description", pd.excerpt.parseMarkdown);
+    item.addChild("description", p.data.excerpt.parseMarkdown);
 
     return item;
 }

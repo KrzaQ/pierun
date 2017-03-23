@@ -51,7 +51,7 @@ class WebInterface
     @noAuth
     void index(HTTPServerRequest req, HTTPServerResponse res)
     {
-        Post[] posts = dbCache.getPostsByLanguage("EN");
+        Post[] posts = dbCache.getPostsByLanguage("PL");
 
         render!("index.dt", posts);
     }
@@ -151,10 +151,10 @@ class WebInterface
             parentComment = dbCache.getComment(parentCommentId);
         }
 
-        Post post = dbCache.getPost(postId);
+        Post p = dbCache.getPost(postId);
 
         render!("preview_comment.dt", author, email, website, markdown,
-            parentComment, post, _error);
+            parentComment, p, _error);
     }
 
     @noAuth @errorDisplay!error
@@ -213,8 +213,35 @@ class WebInterface
             return;
         }
 
-        auto pd = post.edits[$-1];
-        redirect(getPostAddress(post.id, pd.title));      
+        redirect(getPostAddress(post.id, post.data.title));
+    }
+
+    @path("/:lang/tag/:tag") @noAuth @errorDisplay!error
+    void getTag(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        immutable int page = 1;
+        auto tag = req.params["tag"];
+        auto lang = req.params["lang"];
+        getTagImpl(req, res, tag, lang, page);
+    }
+
+    @path("/:lang/tag/:tag/:page") @noAuth @errorDisplay!error
+    void getTagPage(HTTPServerRequest req, HTTPServerResponse res)
+    {
+        import std.conv;
+        int page = req.params["page"].to!int;
+        auto tag = req.params["tag"];
+        auto lang = req.params["lang"];
+        getTagImpl(req, res, tag, lang, page);
+    }
+
+    @noRoute
+    void getTagImpl(HTTPServerRequest req, HTTPServerResponse res,
+        string tag, string lang, int page)
+    {
+        auto posts = dbCache.getPostsByLanguageTag(lang, tag);
+
+        render!("list.dt", posts);
     }
 
     @auth(Role.admin)
@@ -279,7 +306,8 @@ class WebInterface
         PostData pd = new PostData;
 
         p.author = u;
-        p.edits = [pd];
+        p.revisions = [pd];
+        //p.data = pd;
         p.published = cast(DateTime)Clock.currTime;
         p.language = getOrMakeLanguage(language);
 
@@ -290,16 +318,14 @@ class WebInterface
         pd.post = p;
         pd.tags = splitTags;
         pd.gpg = "";
+        pd.isCurrent = 1;
 
         u.posts ~= p;
 
-        session.update(u);
-        session.save(p);
-        session.save(pd);
+        dbCache.setPost(p);
 
         redirect("/");
     }
-
 
     @noRoute @noAuth
     void error(HTTPServerRequest req, string _error)

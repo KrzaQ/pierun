@@ -3,14 +3,12 @@ include header
 - import pierun.utils.markdown, pierun.utils.misc, pierun.core;
 - import std.conv, std.format, std.range;
 
-- PostData pd = post.edits[$-1];
-
 div.contents
     div.posts
         div.post
             h1.title><
                 | Replying to '
-                a(href=getPostAddress(post.id, pd.title)) #{pd.title}
+                a(href=getPostAddress(p.id, p.data.title)) #{p.data.title}
                 |'
         div.comments
 
@@ -39,9 +37,9 @@ div.contents
                         |=markdown
                     br
 
-                    input(type="hidden", name="postId", value=post.id)
+                    input(type="hidden", name="postId", value=p.id)
                     button(type="submit", formaction='/preview_comment', name="preview") preview!
-                    input(type="submit", action='/send_comment', name="send", value="send")
+                    input(type="submit", name="send", value="send")
 
 
             - import pierun.utils.markdown;

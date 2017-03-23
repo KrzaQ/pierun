@@ -3,26 +3,29 @@ include header
 - import pierun.utils.markdown, pierun.utils.misc, pierun.core;
 - import std.conv, std.format, std.range;
 
-- PostData pd = p.edits[$-1];
+- void print_tag(Tag t, Language l)
+    - import std.string, std.uni;
+    a(href='/#{l.isoCode.toLower}/tag/#{t.slugName}') #{t.name}
 
 div.contents
     div.posts
         div.post
             h1.title 
-                a(href=getPostAddress(p.id, pd.title)) #{pd.title}
+                a(href=getPostAddress(p.id, p.data.title)) #{p.data.title}
 
             p#postinfo Written by #{p.author.name}, #{p.published}
 
-            div.post_contents!= pd.markdown.parseMarkdown
+            div.post_contents!= p.data.markdown.parseMarkdown
 
-            - if(pd.timestamp > p.published)
+            - if(p.data.timestamp > p.published)
                 hr
-                p#edited last edited: #{pd.timestamp}
+                p#edited last edited: #{p.data.timestamp}
 
 
             p Tags:
-                - foreach(tag; pd.tags)
-                    div.tag #{tag.name}
+                - foreach(tag; p.data.tags)
+                    div.tag
+                        - print_tag(tag, p.language);
 
             hr
     

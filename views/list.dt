@@ -5,7 +5,7 @@ include header
 - void print_tag(Tag t, Language l)
     - import std.string, std.uni;
     a(href='/#{l.isoCode.toLower}/tag/#{t.slugName}') #{t.name}
-
+    
 div.contents
     div.posts
         - foreach(p; posts)
@@ -22,7 +22,6 @@ div.contents
                         - foreach(tag; p.data.tags)
                             div.tag
                                 - print_tag(tag, p.language);
-
 
                 hr
         
