@@ -153,6 +153,9 @@ class WebInterface
 
         Post p = dbCache.getPost(postId);
 
+        enforceHTTP(p !is null, HTTPStatus.badRequest,
+            "Cannot find post with id %s".format(postId));
+
         render!("preview_comment.dt", author, email, website, markdown,
             parentComment, p, _error);
     }
@@ -307,7 +310,6 @@ class WebInterface
 
         p.author = u;
         p.revisions = [pd];
-        //p.data = pd;
         p.published = cast(DateTime)Clock.currTime;
         p.language = getOrMakeLanguage(language);
 
