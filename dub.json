@@ -20,6 +20,8 @@
 	},
 	"versions": [
 		"VibeCustomMain",
+		"VibeNoSSL",
 		"USE_PGSQL"
 	]
 }
+
