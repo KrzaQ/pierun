@@ -95,8 +95,9 @@ class WebInterface
         getPostIdName(req, res);
     }
 
-    @path("/post/:id/*") @noAuth @errorDisplay!error
-    void getPostIdName(scope HTTPServerRequest req, scope HTTPServerResponse res)
+    @path("/post/:id/:slug") @noAuth @errorDisplay!error
+    void getPostIdName(scope HTTPServerRequest req,
+        scope HTTPServerResponse res)
     {
         auto id = req.params["id"].to!int;
 
@@ -110,6 +111,12 @@ class WebInterface
 
             enforceHTTP(!auth.isNull && auth.isAdmin, HTTPStatus.notFound,
                 "Post %d not found!".format(id));
+        }
+
+        if(req.params["slug"] != p.data.title.toSlugForm) {
+            const url = "/post/%d/%s".format(id, p.data.title.toSlugForm);
+            res.redirect(url, HTTPStatus.movedPermanently);
+            return;
         }
 
         auto comments = dbCache.getCommentsByPost(p);
